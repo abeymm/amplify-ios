@@ -475,7 +475,7 @@ class InitialSyncOperationTests: XCTestCase {
     /// - Then:
     ///    - It performs a sync query against the API category with a "lastSync" time from the last start time of
     ///      the stored metadata
-    func testQueriesFromLastSync() throws {
+    func testQueriesFromLastSync() async throws {
         let startDateMilliseconds = (Int(Date().timeIntervalSince1970) - 100) * 1_000
 
         let storageAdapter = try SQLiteStorageEngineAdapter(connection: Connection(.inMemory))
@@ -483,15 +483,15 @@ class InitialSyncOperationTests: XCTestCase {
 
         let syncMetadata = ModelSyncMetadata(id: MockSynced.modelName, lastSync: startDateMilliseconds)
         let syncMetadataSaved = expectation(description: "Sync metadata saved")
-        storageAdapter.save(syncMetadata) { result in
-            switch result {
-            case .failure(let dataStoreError):
-                XCTAssertNil(dataStoreError)
-            case .success:
-                syncMetadataSaved.fulfill()
-            }
-        }
         wait(for: [syncMetadataSaved], timeout: 1.0)
+        
+        let result = await storageAdapter.save(syncMetadata)
+        switch result {
+        case .failure(let dataStoreError):
+            XCTAssertNil(dataStoreError)
+        case .success:
+            syncMetadataSaved.fulfill()
+        }
 
         let apiWasQueried = expectation(description: "API was queried for a PaginatedList of AnyModel")
         let responder = QueryRequestListenerResponder<PaginatedList<AnyModel>> { request, listener in
@@ -541,11 +541,11 @@ class InitialSyncOperationTests: XCTestCase {
 
         operation.main()
 
-        waitForExpectations(timeout: 1)
+        await waitForExpectations(timeout: 1)
         sink.cancel()
     }
 
-    func testBaseQueryWhenExpiredLastSync() throws {
+    func testBaseQueryWhenExpiredLastSync() async throws {
         // Set start date to 100 seconds in the past
         let startDateMilliSeconds = (Int(Date().timeIntervalSince1970) - 100) * 1_000
 
@@ -554,16 +554,15 @@ class InitialSyncOperationTests: XCTestCase {
 
         let syncMetadata = ModelSyncMetadata(id: MockSynced.modelName, lastSync: startDateMilliSeconds)
         let syncMetadataSaved = expectation(description: "Sync metadata saved")
-        storageAdapter.save(syncMetadata) { result in
-            switch result {
-            case .failure(let dataStoreError):
-                XCTAssertNil(dataStoreError)
-            case .success:
-                syncMetadataSaved.fulfill()
-            }
-        }
         wait(for: [syncMetadataSaved], timeout: 1.0)
-
+        let result = await storageAdapter.save(syncMetadata)
+        switch result {
+        case .failure(let dataStoreError):
+            XCTAssertNil(dataStoreError)
+        case .success:
+            syncMetadataSaved.fulfill()
+        }
+        
         let apiWasQueried = expectation(description: "API was queried for a PaginatedList of AnyModel")
         let responder = QueryRequestListenerResponder<PaginatedList<AnyModel>> { request, listener in
             let lastSync = request.variables?["lastSync"] as? Int

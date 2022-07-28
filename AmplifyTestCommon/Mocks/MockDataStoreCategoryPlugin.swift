@@ -23,6 +23,98 @@ class MockDataStoreCategoryPlugin: MessageReporter, DataStoreCategoryPlugin {
     func reset() {
         notify("reset")
     }
+    
+    func save<M: Model>(
+        _ model: M,
+        where condition: QueryPredicate?
+    ) async -> DataStoreResult<M> {
+        await withCheckedContinuation { continuation in
+            save(
+                model,
+                where: condition,
+                completion: continuation.resume(returning:)
+            )
+        }
+//        notify("save")
+//
+//        if let responder = responders[.saveModelListener] as? SaveModelResponder<M> {
+//            if let callback = responder.callback((model: model,
+//                                                  where: condition)) {
+//                completion(callback)
+//            }
+//        }
+    }
+
+    func query<M: Model>(
+        _ modelType: M.Type,
+        byId id: String
+    ) async -> DataStoreResult<M?> {
+        await withCheckedContinuation { continuation in
+            query(
+                modelType,
+                byId: id,
+                completion: continuation.resume(returning:)
+            )
+        }
+    }
+
+    func query<M: Model>(
+        _ modelType: M.Type,
+        where predicate: QueryPredicate?,
+        sort sortInput: QuerySortInput?,
+        paginate paginationInput: QueryPaginationInput?
+    ) async -> DataStoreResult<[M]> {
+        await withCheckedContinuation { continuation in
+            query(
+                modelType,
+                where: predicate,
+                sort: sortInput,
+                paginate: paginationInput,
+                completion: continuation.resume(returning:)
+            )
+        }
+    }
+
+    func delete<M: Model>(
+        _ model: M,
+        where predicate: QueryPredicate?
+    ) async -> DataStoreResult<Void> {
+        await withCheckedContinuation { continuation in
+            delete(
+                model,
+                where: predicate,
+                completion: continuation.resume(returning:)
+            )
+        }
+    }
+
+    func delete<M: Model>(
+        _ modelType: M.Type,
+        withId id: String,
+        where predicate: QueryPredicate?
+    ) async -> DataStoreResult<Void> {
+        await withCheckedContinuation { continuation in
+            delete(
+                modelType,
+                withId: id,
+                where: predicate,
+                completion: continuation.resume(returning:)
+            )
+        }
+    }
+
+    func delete<M: Model>(
+        _ modelType: M.Type,
+        where predicate: QueryPredicate
+    ) async -> DataStoreResult<Void> {
+        await withCheckedContinuation { continuation in
+            delete(
+                modelType,
+                where: predicate,
+                completion: continuation.resume(returning:)
+            )
+        }
+    }
 
     func save<M: Model>(_ model: M,
                         where condition: QueryPredicate? = nil,

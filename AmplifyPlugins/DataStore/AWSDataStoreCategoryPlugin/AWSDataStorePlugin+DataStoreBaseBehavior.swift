@@ -9,20 +9,22 @@ import Amplify
 import AWSPluginsCore
 
 extension AWSDataStorePlugin: DataStoreBaseBehavior {
-
-    public func save<M: Model>(_ model: M,
-                               where condition: QueryPredicate? = nil,
-                               completion: @escaping DataStoreCallback<M>) {
-        save(model, modelSchema: model.schema, where: condition, completion: completion)
+    
+    public func save<M: Model>(
+        _ model: M,
+        where condition: QueryPredicate? = nil
+    ) async -> DataStoreResult<M> {
+        await save(model, modelSchema: model.schema, where: condition)
     }
-
-    public func save<M: Model>(_ model: M,
-                               modelSchema: ModelSchema,
-                               where condition: QueryPredicate? = nil,
-                               completion: @escaping DataStoreCallback<M>) {
+    
+    public func save<M: Model>(
+        _ model: M,
+        modelSchema: ModelSchema,
+        where condition: QueryPredicate? = nil
+    ) async -> DataStoreResult<M> {
         log.verbose("Saving: \(model) with condition: \(String(describing: condition))")
         initStorageEngineAndStartSync()
-
+        
         // TODO: Refactor this into a proper request/result where the result includes metadata like the derived
         // mutation type
         let modelExists: Bool
@@ -34,151 +36,186 @@ extension AWSDataStorePlugin: DataStoreBaseBehavior {
             modelExists = try engine.storageAdapter.exists(modelSchema, withId: model.id, predicate: nil)
         } catch {
             if let dataStoreError = error as? DataStoreError {
-                completion(.failure(dataStoreError))
-                return
+                return .failure(dataStoreError)
             }
-
+            
             let dataStoreError = DataStoreError.invalidOperation(causedBy: error)
-            completion(.failure(dataStoreError))
-            return
+            return .failure(dataStoreError)
         }
-
+        
         let mutationType = modelExists ? MutationEvent.MutationType.update : .create
-
-        let publishingCompletion: DataStoreCallback<M> = { result in
-            switch result {
-            case .success(let model):
-                // TODO: Differentiate between save & update
-                // TODO: Handle errors from mutation event creation
-                self.publishMutationEvent(from: model, modelSchema: modelSchema, mutationType: mutationType)
-            case .failure:
-                break
-            }
-
-            completion(result)
+        
+        let result = await storageEngine.save(
+            model,
+            modelSchema: modelSchema,
+            condition: condition
+        )
+        
+        switch result {
+        case .success(let model):
+            // TODO: Differentiate between save & update
+            // TODO: Handle errors from mutation event creation
+            self.publishMutationEvent(
+                from: model,
+                modelSchema: modelSchema,
+                mutationType: mutationType
+            )
+        case .failure:
+            break
         }
-        storageEngine.save(model, modelSchema: modelSchema, condition: condition, completion: publishingCompletion)
+        return result
     }
-
-    public func query<M: Model>(_ modelType: M.Type,
-                                byId id: String,
-                                completion: DataStoreCallback<M?>) {
+    
+    public func query<M: Model>(
+        _ modelType: M.Type,
+        byId id: String
+    ) async -> DataStoreResult<M?> {
         initStorageEngineAndStartSync()
         let predicate: QueryPredicate = field("id") == id
-        query(modelType, where: predicate, paginate: .firstResult) {
-            switch $0 {
-            case .success(let models):
-                do {
-                    let first = try models.unique()
-                    completion(.success(first))
-                } catch {
-                    completion(.failure(causedBy: error))
-                }
-            case .failure(let error):
-                completion(.failure(causedBy: error))
+        let result = await query(modelType, where: predicate, paginate: .firstResult)
+        switch result {
+        case .success(let models):
+            do {
+                let first = try models.unique()
+                return .success(first)
+            } catch {
+                return .failure(causedBy: error)
             }
+        case .failure(let error):
+            return .failure(causedBy: error)
         }
+        
     }
-
-    public func query<M: Model>(_ modelType: M.Type,
-                                where predicate: QueryPredicate? = nil,
-                                sort sortInput: QuerySortInput? = nil,
-                                paginate paginationInput: QueryPaginationInput? = nil,
-                                completion: DataStoreCallback<[M]>) {
-        query(modelType,
-              modelSchema: modelType.schema,
-              where: predicate,
-              sort: sortInput?.asSortDescriptors(),
-              paginate: paginationInput,
-              completion: completion)
+    
+    public func query<M: Model>(
+        _ modelType: M.Type,
+        where predicate: QueryPredicate? = nil,
+        sort sortInput: QuerySortInput? = nil,
+        paginate paginationInput: QueryPaginationInput? = nil
+    ) async -> DataStoreResult<[M]> {
+        await query(
+            modelType,
+            modelSchema: modelType.schema,
+            where: predicate,
+            sort: sortInput?.asSortDescriptors(),
+            paginate: paginationInput
+        )
     }
-
-    public func query<M: Model>(_ modelType: M.Type,
-                                modelSchema: ModelSchema,
-                                where predicate: QueryPredicate? = nil,
-                                sort sortInput: [QuerySortDescriptor]? = nil,
-                                paginate paginationInput: QueryPaginationInput? = nil,
-                                completion: DataStoreCallback<[M]>) {
+    
+    public func query<M: Model>(
+        _ modelType: M.Type,
+        modelSchema: ModelSchema,
+        where predicate: QueryPredicate? = nil,
+        sort sortInput: [QuerySortDescriptor]? = nil,
+        paginate paginationInput: QueryPaginationInput? = nil
+    ) async -> DataStoreResult<[M]> {
         initStorageEngineAndStartSync()
-        storageEngine.query(modelType,
-                            modelSchema: modelSchema,
-                            predicate: predicate,
-                            sort: sortInput,
-                            paginationInput: paginationInput,
-                            completion: completion)
+        return await storageEngine.query(
+            modelType,
+            modelSchema: modelSchema,
+            predicate: predicate,
+            sort: sortInput,
+            paginationInput: paginationInput
+        )
     }
-
-    public func delete<M: Model>(_ modelType: M.Type,
-                                 withId id: String,
-                                 where predicate: QueryPredicate? = nil,
-                                 completion: @escaping DataStoreCallback<Void>) {
-        delete(modelType, modelSchema: modelType.schema, withId: id, where: predicate, completion: completion)
+    
+    public func delete<M: Model>(
+        _ modelType: M.Type,
+        withId id: String,
+        where predicate: QueryPredicate? = nil
+    ) async -> DataStoreResult<Void> {
+        await delete(modelType, modelSchema: modelType.schema, withId: id, where: predicate)
     }
-
-    public func delete<M: Model>(_ modelType: M.Type,
-                                 modelSchema: ModelSchema,
-                                 withId id: String,
-                                 where predicate: QueryPredicate? = nil,
-                                 completion: @escaping DataStoreCallback<Void>) {
+    
+    public func delete<M: Model>(
+        _ modelType: M.Type,
+        modelSchema: ModelSchema,
+        withId id: String,
+        where predicate: QueryPredicate? = nil
+    ) async -> DataStoreResult<Void> {
         initStorageEngineAndStartSync()
-        storageEngine.delete(modelType, modelSchema: modelSchema, withId: id, condition: predicate) { result in
-            self.onDeleteCompletion(result: result, modelSchema: modelSchema, completion: completion)
-        }
+        let result = await storageEngine.delete(
+            modelType,
+            modelSchema: modelSchema,
+            withId: id,
+            condition: predicate
+        )
+        return onDeleteCompletion(result: result, modelSchema: modelSchema)
     }
-
-    public func delete<M: Model>(_ model: M,
-                                 where predicate: QueryPredicate? = nil,
-                                 completion: @escaping DataStoreCallback<Void>) {
-        delete(model, modelSchema: model.schema, where: predicate, completion: completion)
+    
+    public func delete<M: Model>(
+        _ model: M,
+        where predicate: QueryPredicate? = nil
+    ) async -> DataStoreResult<Void> {
+        await delete(
+            model,
+            modelSchema: model.schema,
+            where: predicate
+        )
     }
-
-    public func delete<M: Model>(_ model: M,
-                                 modelSchema: ModelSchema,
-                                 where predicate: QueryPredicate? = nil,
-                                 completion: @escaping DataStoreCallback<Void>) {
+    
+    public func delete<M: Model>(
+        _ model: M,
+        modelSchema: ModelSchema,
+        where predicate: QueryPredicate? = nil
+    ) async -> DataStoreResult<Void> {
         initStorageEngineAndStartSync()
-        storageEngine.delete(type(of: model),
-                             modelSchema: modelSchema,
-                             withId: model.id,
-                             condition: predicate) { result in
-            self.onDeleteCompletion(result: result, modelSchema: modelSchema, completion: completion)
-        }
+        let result = await storageEngine.delete(
+            type(of: model),
+            modelSchema: modelSchema,
+            withId: model.id,
+            condition: predicate
+        )
+        return self.onDeleteCompletion(
+            result: result,
+            modelSchema: modelSchema
+        )
     }
-
-    public func delete<M: Model>(_ modelType: M.Type,
-                                 where predicate: QueryPredicate,
-                                 completion: @escaping DataStoreCallback<Void>) {
-        delete(modelType, modelSchema: modelType.schema, where: predicate, completion: completion)
+    
+    public func delete<M: Model>(
+        _ modelType: M.Type,
+        where predicate: QueryPredicate
+    ) async -> DataStoreResult<Void> {
+        await delete(
+            modelType, modelSchema: modelType.schema,
+            where: predicate
+        )
     }
-
-    public func delete<M: Model>(_ modelType: M.Type,
-                                 modelSchema: ModelSchema,
-                                 where predicate: QueryPredicate,
-                                 completion: @escaping DataStoreCallback<Void>) {
+    
+    public func delete<M: Model>(
+        _ modelType: M.Type,
+        modelSchema: ModelSchema,
+        where predicate: QueryPredicate
+    ) async -> DataStoreResult<Void> {
         initStorageEngineAndStartSync()
-        let onCompletion: DataStoreCallback<[M]> = { result in
-            switch result {
-            case .success(let models):
-                for model in models {
-                    self.publishMutationEvent(from: model, modelSchema: modelSchema, mutationType: .delete)
-                }
-                completion(.emptyResult)
-            case .failure(let error):
-                completion(.failure(error))
+        
+        let result: DataStoreResult<[M]> = await storageEngine.delete(
+            modelType,
+            modelSchema: modelSchema,
+            filter: predicate
+        )
+        
+        switch result {
+        case .success(let models):
+            for model in models {
+                self.publishMutationEvent(
+                    from: model,
+                    modelSchema: modelSchema,
+                    mutationType: .delete
+                )
             }
+            return .emptyResult
+        case .failure(let error):
+            return .failure(error)
         }
-        storageEngine.delete(modelType,
-                             modelSchema: modelSchema,
-                             filter: predicate,
-                             completion: onCompletion)
     }
-
+    
     public func start(completion: @escaping DataStoreCallback<Void>) {
         initStorageEngineAndStartSync { result in
             completion(result)
         }
     }
-
+    
     public func stop(completion: @escaping DataStoreCallback<Void>) {
         storageEngineInitQueue.sync {
             operationQueue.operations.forEach { operation in
@@ -190,24 +227,24 @@ extension AWSDataStorePlugin: DataStoreBaseBehavior {
                 dispatchedModelSynced.set(false)
             }
             if storageEngine == nil {
-
+                
                 completion(.successfulVoid)
                 return
             }
-
+            
             storageEngine.stopSync { result in
                 self.storageEngine = nil
                 completion(result)
             }
         }
     }
-
+    
     public func clear(completion: @escaping DataStoreCallback<Void>) {
         if case let .failure(error) = initStorageEngine() {
             completion(.failure(causedBy: error))
             return
         }
-
+        
         storageEngineInitQueue.sync {
             operationQueue.operations.forEach { operation in
                 if let operation = operation as? DataStoreObserveQueryOperation {
@@ -227,45 +264,56 @@ extension AWSDataStorePlugin: DataStoreBaseBehavior {
             }
         }
     }
-
+    
     // MARK: Private
-
-    private func onDeleteCompletion<M: Model>(result: DataStoreResult<M?>,
-                                              modelSchema: ModelSchema,
-                                              completion: @escaping DataStoreCallback<Void>) {
+    
+    private func onDeleteCompletion<M: Model>(
+        result: DataStoreResult<M?>,
+        modelSchema: ModelSchema
+    ) -> DataStoreResult<Void> {
         switch result {
-        case .success(let modelOptional):
-            if let model = modelOptional {
-                publishMutationEvent(from: model, modelSchema: modelSchema, mutationType: .delete)
+        case .success(let model):
+            if let model = model {
+                publishMutationEvent(
+                    from: model,
+                    modelSchema: modelSchema,
+                    mutationType: .delete
+                )
             }
-            completion(.emptyResult)
+            return .emptyResult
         case .failure(let error):
-            completion(.failure(error))
+            return .failure(error)
         }
     }
-
-    private func publishMutationEvent<M: Model>(from model: M,
-                                                modelSchema: ModelSchema,
-                                                mutationType: MutationEvent.MutationType) {
-
+    
+    private func publishMutationEvent<M: Model>(
+        from model: M,
+        modelSchema: ModelSchema,
+        mutationType: MutationEvent.MutationType
+    ) {
+        
         let metadata = MutationSyncMetadata.keys
         let metadataId = MutationSyncMetadata.identifier(modelName: modelSchema.name, modelId: model.id)
-        storageEngine.query(MutationSyncMetadata.self,
-                            predicate: metadata.id == metadataId,
-                            sort: nil,
-                            paginationInput: .firstResult) {
+        Task {
+            let result = await storageEngine.query(
+                MutationSyncMetadata.self,
+                predicate: metadata.id == metadataId,
+                sort: nil,
+                paginationInput: .firstResult
+            )
             do {
-                let result = try $0.get()
+                let result = try result.get()
                 let syncMetadata = try result.unique()
-                let mutationEvent = try MutationEvent(model: model,
-                                                      modelSchema: modelSchema,
-                                                      mutationType: mutationType,
-                                                      version: syncMetadata?.version)
+                let mutationEvent = try MutationEvent(
+                    model: model,
+                    modelSchema: modelSchema,
+                    mutationType: mutationType,
+                    version: syncMetadata?.version
+                )
                 self.dataStorePublisher?.send(input: mutationEvent)
             } catch {
                 self.log.error(error: error)
             }
         }
     }
-
 }

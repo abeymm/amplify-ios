@@ -29,8 +29,10 @@ class APICategoryDependencyTests: XCTestCase {
         let model = MockUnsynced()
 
         let modelSaved = expectation(description: "Model saved")
-        Amplify.DataStore.save(model) { _ in modelSaved.fulfill() }
         wait(for: [modelSaved], timeout: 1.0)
+        await Amplify.DataStore.save(model)
+        modelSaved.fulfill()
+        
     }
 
     /// **NOTE:** We can't put in a meaningful test for this condition because the first call to the unconfigured API

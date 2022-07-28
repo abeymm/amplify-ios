@@ -35,39 +35,41 @@ extension MutationEvent {
     // For a given model `id`, checks the version of the head of pending mutation event queue
     // against the API response version in `mutationSync` and saves it in the mutation event table if
     // the response version is a newer one
-    static func reconcilePendingMutationEventsVersion(sent mutationEvent: MutationEvent,
-                                                      received mutationSync: MutationSync<AnyModel>,
-                                                      storageAdapter: StorageEngineAdapter,
-                                                      completion: @escaping DataStoreCallback<Void>) {
-        MutationEvent.pendingMutationEvents(
+    static func reconcilePendingMutationEventsVersion(
+        sent mutationEvent: MutationEvent,
+        received mutationSync: MutationSync<AnyModel>,
+        storageAdapter: StorageEngineAdapter
+    ) async -> DataStoreResult<Void>  {
+        
+        let queryResult = await MutationEvent.pendingMutationEvents(
             for: mutationEvent.modelId,
-            storageAdapter: storageAdapter) { queryResult in
+            storageAdapter: storageAdapter
+        )
             switch queryResult {
             case .failure(let dataStoreError):
-                completion(.failure(dataStoreError))
+                return .failure(dataStoreError)
             case .success(let localMutationEvents):
                 guard let existingEvent = localMutationEvents.first else {
-                    completion(.success(()))
-                    return
+                    return .success(())
                 }
 
-                guard let reconciledEvent = reconcile(pendingMutationEvent: existingEvent,
+                guard let reconciledEvent = reconcile(
+                    pendingMutationEvent: existingEvent,
                                                       with: mutationEvent,
-                                                      responseMutationSync: mutationSync) else {
-                    completion(.success(()))
-                    return
+                                                      responseMutationSync: mutationSync
+                ) else {
+                    return .success(())
                 }
 
-                storageAdapter.save(reconciledEvent, condition: nil) { result in
-                    switch result {
-                    case .failure(let dataStoreError):
-                        completion(.failure(dataStoreError))
-                    case .success:
-                        completion(.success(()))
-                    }
+                let result = await storageAdapter.save(reconciledEvent, condition: nil)
+                switch result {
+                case .failure(let dataStoreError):
+                    return .failure(dataStoreError)
+                case .success:
+                    return .success(())
                 }
             }
-        }
+        
     }
 
     static func reconcile(pendingMutationEvent: MutationEvent,

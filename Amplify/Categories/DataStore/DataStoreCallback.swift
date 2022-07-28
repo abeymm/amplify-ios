@@ -32,3 +32,5 @@ extension DataStoreResult {
 
 /// Function type of every `DataStore` asynchronous API.
 public typealias DataStoreCallback<Result> = (DataStoreResult<Result>) -> Void
+
+public typealias DataStoreAsyncCallback<Result> = (DataStoreResult<Result>) async -> Void

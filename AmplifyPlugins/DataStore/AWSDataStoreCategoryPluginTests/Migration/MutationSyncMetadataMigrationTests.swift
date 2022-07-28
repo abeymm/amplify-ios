@@ -164,7 +164,7 @@ class MutationSyncMetadataMigrationTests: MutationSyncMetadataMigrationTestBase 
                                               .renameMutationSyncMetadataCopy])
     }
 
-    func testApply() throws {
+    func testApply() async throws {
         try setUpAllModels()
         let restaurant = Restaurant(restaurantName: "name")
         save(restaurant)

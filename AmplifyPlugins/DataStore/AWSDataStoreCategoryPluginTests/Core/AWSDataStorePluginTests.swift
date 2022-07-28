@@ -224,7 +224,7 @@ class AWSDataStorePluginTests: XCTestCase {
         }
     }
 
-    func testStorageEngineQueryClearQuery() throws {
+    func testStorageEngineQueryClearQuery() async throws {
         let startExpectation = expectation(description: "Start Sync should be called with Query")
         let clearExpectation = expectation(description: "Clear should be called")
         let startExpectationOnQuery = expectation(description: "Start Sync should be called again with Query")
@@ -266,29 +266,27 @@ class AWSDataStorePluginTests: XCTestCase {
             } receiveValue: { _ in }
 
             let semaphore = DispatchSemaphore(value: 0)
-            plugin.query(ExampleWithEveryType.self, completion: {_ in
-                XCTAssertNotNil(plugin.storageEngine)
-                XCTAssertNotNil(plugin.dataStorePublisher)
-                semaphore.signal()
-            })
-            semaphore.wait()
-
+            await plugin.query(ExampleWithEveryType.self)
+            
+            XCTAssertNotNil(plugin.storageEngine)
+            XCTAssertNotNil(plugin.dataStorePublisher)
+            
             plugin.clear(completion: { _ in
                 XCTAssertNil(plugin.storageEngine)
                 XCTAssertNotNil(plugin.dataStorePublisher)
-                semaphore.signal()
             })
-            semaphore.wait()
+            
             storageEngine.responders[.query] = QueryResponder<ExampleWithEveryType> {_ in
                 count = self.expect(startExpectationOnQuery, count, 3)
                 return .success([])
             }
-
-            plugin.query(ExampleWithEveryType.self, completion: { _ in
-                XCTAssertNotNil(plugin.storageEngine)
-                XCTAssertNotNil(plugin.dataStorePublisher)
-            })
-            waitForExpectations(timeout: 1.0)
+            
+            await plugin.query(ExampleWithEveryType.self)
+            XCTAssertNotNil(plugin.storageEngine)
+            XCTAssertNotNil(plugin.dataStorePublisher)
+            
+            
+            await waitForExpectations(timeout: 1.0)
             sink.cancel()
         } catch {
             XCTFail("DataStore configuration should not fail with nil configuration. \(error)")

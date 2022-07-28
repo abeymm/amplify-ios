@@ -30,39 +30,48 @@ extension AWSMutationDatabaseAdapter: MutationEventIngester {
 
     /// Resolves conflicts for the offered mutationEvent, and either accepts the event, returning a disposition, or
     /// rejects the event with an error
-    func resolveConflictsThenSave(mutationEvent: MutationEvent,
-                                  storageAdapter: StorageEngineAdapter,
-                                  completionPromise: @escaping Future<MutationEvent, DataStoreError>.Promise) {
-
-        // We don't want to query MutationSync<AnyModel> because a) we already have the model, and b) delete mutations
-        // are submitted *after* the delete has already been applied to the local data store, meaning there is no model
-        // to query.
-        var mutationEvent = mutationEvent
-        do {
-            // TODO: Refactor this so that it's clear that the storage engine is not responsible for setting the version
-            // perhaps as simple as renaming to `submit(unversionedMutationEvent:)` or similar
-            let syncMetadata = try storageAdapter.queryMutationSyncMetadata(for: mutationEvent.modelId,
-                                                                               modelName: mutationEvent.modelName)
-            mutationEvent.version = syncMetadata?.version
-        } catch {
-            completionPromise(.failure(DataStoreError(error: error)))
-        }
-
-        MutationEvent.pendingMutationEvents(
-            for: mutationEvent.modelId,
-            storageAdapter: storageAdapter) { result in
-                switch result {
-                case .failure(let dataStoreError):
-                    completionPromise(.failure(dataStoreError))
-                case .success(let localMutationEvents):
-                    let mutationDisposition = disposition(for: mutationEvent,
-                                                          given: localMutationEvents)
-                    resolve(candidate: mutationEvent,
-                            localEvents: localMutationEvents,
-                            per: mutationDisposition,
-                            storageAdapter: storageAdapter,
-                            completionPromise: completionPromise)
-                }
+    func resolveConflictsThenSave(
+        mutationEvent: MutationEvent,
+        storageAdapter: StorageEngineAdapter,
+        completionPromise: @escaping Future<MutationEvent, DataStoreError>.Promise
+    ) {
+        Task {
+            // We don't want to query MutationSync<AnyModel> because a) we already have the model, and b) delete mutations
+            // are submitted *after* the delete has already been applied to the local data store, meaning there is no model
+            // to query.
+            var mutationEvent = mutationEvent
+            do {
+                // TODO: Refactor this so that it's clear that the storage engine is not responsible for setting the version
+                // perhaps as simple as renaming to `submit(unversionedMutationEvent:)` or similar
+                let syncMetadata = try storageAdapter.queryMutationSyncMetadata(
+                    for: mutationEvent.modelId,
+                    modelName: mutationEvent.modelName
+                )
+                mutationEvent.version = syncMetadata?.version
+            } catch {
+                completionPromise(.failure(DataStoreError(error: error)))
+            }
+            
+            let result = await MutationEvent.pendingMutationEvents(
+                for: mutationEvent.modelId,
+                storageAdapter: storageAdapter
+            )
+            switch result {
+            case .failure(let dataStoreError):
+                completionPromise(.failure(dataStoreError))
+            case .success(let localMutationEvents):
+                let mutationDisposition = disposition(
+                    for: mutationEvent,
+                    given: localMutationEvents
+                )
+                resolve(
+                    candidate: mutationEvent,
+                    localEvents: localMutationEvents,
+                    per: mutationDisposition,
+                    storageAdapter: storageAdapter,
+                    completionPromise: completionPromise
+                )
+            }
         }
     }
 
@@ -131,11 +140,13 @@ extension AWSMutationDatabaseAdapter: MutationEventIngester {
 
     }
 
-    func resolve(candidate: MutationEvent,
-                 localEvents: [MutationEvent],
-                 per disposition: MutationDisposition,
-                 storageAdapter: StorageEngineAdapter,
-                 completionPromise: @escaping Future<MutationEvent, DataStoreError>.Promise) {
+    func resolve(
+        candidate: MutationEvent,
+        localEvents: [MutationEvent],
+        per disposition: MutationDisposition,
+        storageAdapter: StorageEngineAdapter,
+        completionPromise: @escaping Future<MutationEvent, DataStoreError>.Promise
+    ) {
         log.verbose("\(#function) disposition \(disposition)")
 
         switch disposition {
@@ -143,15 +154,32 @@ extension AWSMutationDatabaseAdapter: MutationEventIngester {
             completionPromise(.failure(dataStoreError))
         case .dropCandidateAndDeleteLocal:
             // TODO: Handle errors from delete, and convert to async
-            let group = DispatchGroup()
-            localEvents.forEach {
-                group.enter()
-                storageAdapter.delete(MutationEvent.self,
-                                      modelSchema: MutationEvent.schema,
-                                      withId: $0.id,
-                                      condition: nil) { _ in group.leave() }
+            Task {
+                await withTaskGroup(of: Void.self) { taskGroup in
+                    localEvents.forEach { event in
+                        taskGroup.addTask {
+                            _ = await storageAdapter.delete(
+                                MutationEvent.self,
+                                modelSchema: MutationEvent.schema,
+                                withId: event.id,
+                                condition: nil
+                            )
+                        }
+                    }
+                }
             }
-            group.wait()
+            
+//            let group = DispatchGroup()
+//            localEvents.forEach {
+//                group.enter()
+//
+//                storageAdapter.delete(
+//                    MutationEvent.self,
+//                    modelSchema: MutationEvent.schema,
+//                    withId: $0.id,
+//                    condition: nil) { _ in group.leave() }
+//            }
+//            group.wait()
             completionPromise(.success(candidate))
         case .saveCandidate:
             save(mutationEvent: candidate,
@@ -168,19 +196,42 @@ extension AWSMutationDatabaseAdapter: MutationEventIngester {
 
             if localEvents.count > 1 {
                 // TODO: Handle errors from delete
-                localEvents
-                    .suffix(from: 1)
-                    .forEach { storageAdapter.delete(MutationEvent.self,
-                                                     modelSchema: MutationEvent.schema,
-                                                     withId: $0.id,
-                                                     condition: nil) { _ in } }
-            }
+                Task {
+                    await withTaskGroup(of: Void.self) { taskGroup in
+                        localEvents
+                            .suffix(from: 1)
+                            .forEach { event in
+                            taskGroup.addTask {
+                                _ = await storageAdapter.delete(
+                                    MutationEvent.self,
+                                    modelSchema: MutationEvent.schema,
+                                    withId: event.id,
+                                    condition: nil
+                                )
+                            }
+                        }
+                    }
+                }
+                
+//                localEvents
+//                    .suffix(from: 1)
+//                    .forEach {
+//
+//                        storageAdapter.delete(
+//                            MutationEvent.self,
+//                            modelSchema: MutationEvent.schema,
+//                            withId: $0.id,
+//                            condition: nil
+//                        )
+////                        { _ in } }
+//            }
 
             let resolvedEvent = getResolvedEvent(for: eventToUpdate, applying: candidate)
 
             save(mutationEvent: resolvedEvent,
                  storageAdapter: storageAdapter,
                  completionPromise: completionPromise)
+            }
         }
     }
 
@@ -204,16 +255,18 @@ extension AWSMutationDatabaseAdapter: MutationEventIngester {
 
     /// Saves the deconflicted mutationEvent, invokes `nextEventPromise` if it exists, and the save was successful,
     /// and finally invokes the completion promise from the future of the original invocation of `submit`
-    func save(mutationEvent: MutationEvent,
-              storageAdapter: StorageEngineAdapter,
-              completionPromise: @escaping Future<MutationEvent, DataStoreError>.Promise) {
-
-        log.verbose("\(#function) mutationEvent: \(mutationEvent)")
-        var eventToPersist = mutationEvent
-        if nextEventPromise.get() != nil {
-            eventToPersist.inProcess = true
-        }
-        storageAdapter.save(eventToPersist, condition: nil) { result in
+    func save(
+        mutationEvent: MutationEvent,
+        storageAdapter: StorageEngineAdapter,
+        completionPromise: @escaping Future<MutationEvent, DataStoreError>.Promise
+    ) {
+        Task {
+            log.verbose("\(#function) mutationEvent: \(mutationEvent)")
+            var eventToPersist = mutationEvent
+            if nextEventPromise.get() != nil {
+                eventToPersist.inProcess = true
+            }
+            let result = await storageAdapter.save(eventToPersist, condition: nil)
             switch result {
             case .failure(let dataStoreError):
                 self.log.verbose("\(#function): Error saving mutation event: \(dataStoreError)")
@@ -227,7 +280,6 @@ extension AWSMutationDatabaseAdapter: MutationEventIngester {
             self.log.verbose("\(#function): invoking completionPromise with \(result)")
             completionPromise(result)
         }
-
     }
 
 }

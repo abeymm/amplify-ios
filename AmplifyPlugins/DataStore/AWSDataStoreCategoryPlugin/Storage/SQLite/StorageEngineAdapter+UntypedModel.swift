@@ -9,13 +9,12 @@ import Amplify
 import SQLite
 
 extension SQLiteStorageEngineAdapter {
-
-    func save(untypedModel: Model, completion: DataStoreCallback<Model>) {
+    
+    func save(untypedModel: Model) async -> DataStoreResult<Model> {
         guard let connection = connection else {
-            completion(.failure(.nilSQLiteConnection()))
-            return
+            return .failure(.nilSQLiteConnection())
         }
-
+        
         do {
             let modelName: ModelName
             if let jsonModel = untypedModel as? JSONValueHolder,
@@ -24,14 +23,14 @@ extension SQLiteStorageEngineAdapter {
             } else {
                 modelName = untypedModel.modelName
             }
-
+            
             guard let modelSchema = ModelRegistry.modelSchema(from: modelName) else {
                 let error = DataStoreError.invalidModelName(modelName)
                 throw error
             }
-
+            
             let shouldUpdate = try exists(modelSchema, withId: untypedModel.id)
-
+            
             // TODO serialize result and create a new instance of the model
             // (some columns might be auto-generated after DB insert/update)
             if shouldUpdate {
@@ -41,28 +40,28 @@ extension SQLiteStorageEngineAdapter {
                 let statement = InsertStatement(model: untypedModel, modelSchema: modelSchema)
                 _ = try connection.prepare(statement.stringValue).run(statement.variables)
             }
-
-            completion(.success(untypedModel))
+            
+            return .success(untypedModel)
         } catch {
-            completion(.failure(causedBy: error))
+            return .failure(causedBy: error)
         }
     }
-
-    func query(modelSchema: ModelSchema,
-               predicate: QueryPredicate? = nil,
-               completion: DataStoreCallback<[Model]>) {
+    
+    func query(
+        modelSchema: ModelSchema,
+        predicate: QueryPredicate? = nil
+    ) async -> DataStoreResult<[Model]> {
         guard let connection = connection else {
-            completion(.failure(.nilSQLiteConnection()))
-            return
+            return .failure(.nilSQLiteConnection())
         }
         do {
             let statement = SelectStatement(from: modelSchema, predicate: predicate)
             let rows = try connection.prepare(statement.stringValue).run(statement.variables)
             let result: [Model] = try rows.convertToUntypedModel(using: modelSchema, statement: statement)
-            completion(.success(result))
+            return .success(result)
         } catch {
-            completion(.failure(causedBy: error))
+            return .failure(causedBy: error)
         }
     }
-
+    
 }

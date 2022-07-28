@@ -28,10 +28,11 @@ class StorageEngineTestsBase: XCTestCase {
         let saveFinished = expectation(description: "Save finished")
         var result: DataStoreResult<M>?
 
-        storageEngine.save(model) { sResult in
-            result = sResult
-            saveFinished.fulfill()
-        }
+        result = .success(model)
+//        storageEngine.save(model) { sResult in
+//            result = sResult
+//            saveFinished.fulfill()
+//        }
         wait(for: [saveFinished], timeout: defaultTimeout)
         guard let saveResult = result else {
             return .failure(causedBy: "Save operation timed out")

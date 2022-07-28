@@ -35,7 +35,14 @@ public extension DataStoreBaseBehavior {
         where predicate: QueryPredicate? = nil
     ) -> DataStorePublisher<Void> {
         Future { promise in
-            self.delete(modelType, withId: id, where: predicate) { promise($0) }
+            Task {
+                let result = await self.delete(
+                    modelType,
+                    withId: id,
+                    where: predicate
+                )
+                promise(result)
+            }
         }.eraseToAnyPublisher()
     }
 
@@ -51,7 +58,10 @@ public extension DataStoreBaseBehavior {
         where predicate: QueryPredicate
     ) -> DataStorePublisher<Void> {
         Future { promise in
-            self.delete(modelType, where: predicate) { promise($0) }
+            Task {
+                let result = await self.delete(modelType, where: predicate)
+                promise(result)
+            }
         }.eraseToAnyPublisher()
     }
 
@@ -67,7 +77,10 @@ public extension DataStoreBaseBehavior {
         where predicate: QueryPredicate? = nil
     ) -> DataStorePublisher<Void> {
         Future { promise in
-            self.delete(model, where: predicate) { promise($0) }
+            Task {
+                let result = await self.delete(model, where: predicate)
+                promise(result)
+            }
         }.eraseToAnyPublisher()
     }
 
@@ -82,7 +95,10 @@ public extension DataStoreBaseBehavior {
         byId id: String
     ) -> DataStorePublisher<M?> {
         Future { promise in
-            self.query(modelType, byId: id) { promise($0) }
+            Task {
+                let result = await self.query(modelType, byId: id)
+                promise(result)
+            }
         }.eraseToAnyPublisher()
     }
 
@@ -101,13 +117,14 @@ public extension DataStoreBaseBehavior {
         paginate paginationInput: QueryPaginationInput? = nil
     ) -> DataStorePublisher<[M]> {
         Future { promise in
-            self.query(
-                modelType,
-                where: predicate,
-                sort: sortInput,
-                paginate: paginationInput
-            ) {
-                promise($0)
+            Task {
+                let result = await self.query(
+                    modelType,
+                    where: predicate,
+                    sort: sortInput,
+                    paginate: paginationInput
+                )
+                promise(result)
             }
         }.eraseToAnyPublisher()
     }
@@ -125,7 +142,10 @@ public extension DataStoreBaseBehavior {
         where condition: QueryPredicate? = nil
     ) -> DataStorePublisher<M> {
         Future { promise in
-            self.save(model, where: condition) { promise($0) }
+            Task {
+                let result = await self.save(model, where: condition)
+                promise(result)
+            }
         }.eraseToAnyPublisher()
     }
 }

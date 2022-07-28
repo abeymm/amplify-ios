@@ -13,22 +13,22 @@ import AWSPluginsCore
 /// Reconciles an incoming model mutation with the stored model. If there is no conflict (e.g., the incoming model has
 /// a later version than the stored model), then write the new data to the store.
 class ReconcileAndLocalSaveOperation: AsynchronousOperation {
-
+    
     /// Disambiguation for the version of the model incoming from the remote API
     typealias RemoteModel = MutationSync<AnyModel>
-
+    
     /// Disambiguation for the sync metadata for the model stored in local datastore
     typealias LocalMetadata = MutationSyncMetadata
-
+    
     /// Disambiguation for the version of the model that was applied to the local datastore. In the case of a create or
     /// update mutation, this represents the saved model. In the case of a delete mutation, this is the data that was
     /// sent from the remote API as part of the mutation.
     typealias AppliedModel = MutationSync<AnyModel>
-
+    
     let id: UUID = UUID()
     private let workQueue = DispatchQueue(label: "com.amazonaws.ReconcileAndLocalSaveOperation",
                                           target: DispatchQueue.global())
-
+    
     private weak var storageAdapter: StorageEngineAdapter?
     private let stateMachine: StateMachine<State, Action>
     private let remoteModels: [RemoteModel]
@@ -40,7 +40,7 @@ class ReconcileAndLocalSaveOperation: AsynchronousOperation {
     public var publisher: AnyPublisher<ReconcileAndLocalSaveOperationEvent, DataStoreError> {
         return mutationEventPublisher.eraseToAnyPublisher()
     }
-
+    
     init(modelSchema: ModelSchema,
          remoteModels: [RemoteModel],
          storageAdapter: StorageEngineAdapter?,
@@ -52,10 +52,10 @@ class ReconcileAndLocalSaveOperation: AsynchronousOperation {
         self.stateMachine = stateMachine ?? StateMachine(initialState: .waiting,
                                                          resolver: Resolver.resolve(currentState:action:))
         self.mutationEventPublisher = PassthroughSubject<ReconcileAndLocalSaveOperationEvent, DataStoreError>()
-
+        
         self.cancellables = Set<AnyCancellable>()
         super.init()
-
+        
         self.stateMachineSink = self.stateMachine
             .$state
             .sink { [weak self] newState in
@@ -68,62 +68,62 @@ class ReconcileAndLocalSaveOperation: AsynchronousOperation {
                 }
             }
     }
-
+    
     override func main() {
         log.verbose(#function)
-
+        
         guard !isCancelled else {
             return
         }
-
+        
         stopwatch.start()
         stateMachine.notify(action: .started(remoteModels))
     }
-
+    
     /// Listens to incoming state changes and invokes the appropriate asynchronous methods in response.
     func respond(to newState: State) {
         log.verbose("\(#function): \(newState)")
-
+        
         switch newState {
         case .waiting:
             break
-
+            
         case .reconciling(let remoteModels):
             reconcile(remoteModels: remoteModels)
-
+            
         case .inError(let error):
             // Maybe we have to notify the Hub?
             log.error(error: error)
             notifyFinished()
-
+            
         case .finished:
             // Maybe we have to notify the Hub?
             notifyFinished()
         }
     }
-
+    
     // MARK: - Responder methods
-
+    
     func reconcile(remoteModels: [RemoteModel]) {
         guard !isCancelled else {
             log.info("\(#function) - cancelled, aborting")
             return
         }
-
+        
         guard let storageAdapter = storageAdapter else {
             let error = DataStoreError.nilStorageAdapter()
             notifyDropped(count: remoteModels.count, error: error)
             stateMachine.notify(action: .errored(error))
             return
         }
-
+        
         guard !remoteModels.isEmpty else {
             stateMachine.notify(action: .reconciled)
             return
         }
-
+        
         let remoteModelIds = remoteModels.map { $0.model.id }
-
+        
         do {
             try storageAdapter.transaction {
                 queryPendingMutations(forModelIds: remoteModelIds)
@@ -156,32 +156,35 @@ class ReconcileAndLocalSaveOperation: AsynchronousOperation {
             stateMachine.notify(action: .errored(dataStoreError))
         }
     }
-
+    
     func queryPendingMutations(forModelIds modelIds: [Model.Identifier]) -> Future<[MutationEvent], DataStoreError> {
         Future<[MutationEvent], DataStoreError> { promise in
-            var result: Result<[MutationEvent], DataStoreError> = .failure(Self.unfulfilledDataStoreError())
-            defer {
-                promise(result)
-            }
-            guard !self.isCancelled else {
-                self.log.info("\(#function) - cancelled, aborting")
-                result = .success([])
-                return
-            }
-            guard let storageAdapter = self.storageAdapter else {
-                let error = DataStoreError.nilStorageAdapter()
-                self.notifyDropped(count: modelIds.count, error: error)
-                result = .failure(error)
-                return
-            }
-
-            guard !modelIds.isEmpty else {
-                result = .success([])
-                return
-            }
-
-            MutationEvent.pendingMutationEvents(for: modelIds,
-                                                storageAdapter: storageAdapter) { queryResult in
+            Task {
+                var result: Result<[MutationEvent], DataStoreError> = .failure(Self.unfulfilledDataStoreError())
+                defer {
+                    promise(result)
+                }
+                guard !self.isCancelled else {
+                    self.log.info("\(#function) - cancelled, aborting")
+                    result = .success([])
+                    return
+                }
+                guard let storageAdapter = self.storageAdapter else {
+                    let error = DataStoreError.nilStorageAdapter()
+                    self.notifyDropped(count: modelIds.count, error: error)
+                    result = .failure(error)
+                    return
+                }
+                
+                guard !modelIds.isEmpty else {
+                    result = .success([])
+                    return
+                }
+                
+                let queryResult = await MutationEvent.pendingMutationEvents(
+                    for: modelIds,
+                    storageAdapter: storageAdapter
+                )
                 switch queryResult {
                 case .failure(let dataStoreError):
                     self.notifyDropped(count: modelIds.count, error: dataStoreError)
@@ -192,18 +195,18 @@ class ReconcileAndLocalSaveOperation: AsynchronousOperation {
             }
         }
     }
-
+    
     func reconcile(_ remoteModels: [RemoteModel], pendingMutations: [MutationEvent]) -> [RemoteModel] {
         guard !remoteModels.isEmpty else {
             return []
         }
-
+        
         let remoteModelsToApply = RemoteSyncReconciler.filter(remoteModels,
                                                               pendingMutations: pendingMutations)
         notifyDropped(count: remoteModels.count - remoteModelsToApply.count)
         return remoteModelsToApply
     }
-
+    
     func queryLocalMetadata(_ remoteModels: [RemoteModel]) -> Future<([RemoteModel], [LocalMetadata]), DataStoreError> {
         Future<([RemoteModel], [LocalMetadata]), DataStoreError> { promise in
             var result: Result<([RemoteModel], [LocalMetadata]), DataStoreError> =
@@ -222,16 +225,16 @@ class ReconcileAndLocalSaveOperation: AsynchronousOperation {
                 result = .failure(error)
                 return
             }
-
+            
             guard !remoteModels.isEmpty else {
                 result = .success(([], []))
                 return
             }
-
+            
             do {
                 let localMetadatas = try storageAdapter.queryMutationSyncMetadata(
                     for: remoteModels.map { $0.model.id },
-                       modelName: self.modelSchema.name)
+                    modelName: self.modelSchema.name)
                 result = .success((remoteModels, localMetadatas))
             } catch {
                 let error = DataStoreError(error: error)
@@ -241,101 +244,101 @@ class ReconcileAndLocalSaveOperation: AsynchronousOperation {
             }
         }
     }
-
+    
     func getDispositions(for remoteModels: [RemoteModel],
                          localMetadatas: [LocalMetadata]) -> [RemoteSyncReconciler.Disposition] {
         guard !remoteModels.isEmpty else {
             return []
         }
-
+        
         let dispositions = RemoteSyncReconciler.getDispositions(remoteModels,
                                                                 localMetadatas: localMetadatas)
         notifyDropped(count: remoteModels.count - dispositions.count)
         return dispositions
     }
-
+    
     // TODO: refactor - move each the publisher constructions to its own utility method for readability of the
     // `switch` and a single method that you can invoke in the `map`
     func applyRemoteModelsDispositions(
         _ dispositions: [RemoteSyncReconciler.Disposition]) -> Future<Void, DataStoreError> {
-        Future<Void, DataStoreError> { promise in
-            var result: Result<Void, DataStoreError> = .failure(Self.unfulfilledDataStoreError())
-            defer {
-                promise(result)
-            }
-            guard !self.isCancelled else {
-                self.log.info("\(#function) - cancelled, aborting")
-                result = .successfulVoid
-                return
-            }
-            guard let storageAdapter = self.storageAdapter else {
-                let error = DataStoreError.nilStorageAdapter()
-                self.notifyDropped(count: dispositions.count, error: error)
-                result = .failure(error)
-                return
-            }
-
-            guard !dispositions.isEmpty else {
-                result = .successfulVoid
-                return
-            }
-
-            let publishers = dispositions.map { disposition ->
-                Publishers.FlatMap<Future<Void, DataStoreError>,
-                                   Future<ReconcileAndLocalSaveOperation.ApplyRemoteModelResult, DataStoreError>> in
-
-                switch disposition {
-                case .create(let remoteModel):
-                    let publisher = self.save(storageAdapter: storageAdapter,
-                                              remoteModel: remoteModel)
-                        .flatMap { applyResult in
-                            self.saveMetadata(storageAdapter: storageAdapter,
-                                              applyResult: applyResult,
-                                              mutationType: .create)
-                        }
-                    return publisher
-                case .update(let remoteModel):
-                    let publisher = self.save(storageAdapter: storageAdapter,
-                                              remoteModel: remoteModel)
-                        .flatMap { applyResult in
-                            self.saveMetadata(storageAdapter: storageAdapter,
-                                              applyResult: applyResult,
-                                              mutationType: .update)
-                        }
-                    return publisher
-                case .delete(let remoteModel):
-                    let publisher = self.delete(storageAdapter: storageAdapter,
-                                                remoteModel: remoteModel)
-                        .flatMap { applyResult in
-                            self.saveMetadata(storageAdapter: storageAdapter,
-                                              applyResult: applyResult,
-                                              mutationType: .delete)
-                        }
-                    return publisher
+            Future<Void, DataStoreError> { promise in
+                var result: Result<Void, DataStoreError> = .failure(Self.unfulfilledDataStoreError())
+                defer {
+                    promise(result)
                 }
-            }
-
-            Publishers.MergeMany(publishers)
-                .collect()
-                .sink(
-                    receiveCompletion: {
-                        if case .failure(let error) = $0 {
-                            result = .failure(error)
-                        }
-                    },
-                    receiveValue: { _ in
-                        result = .successfulVoid
+                guard !self.isCancelled else {
+                    self.log.info("\(#function) - cancelled, aborting")
+                    result = .successfulVoid
+                    return
+                }
+                guard let storageAdapter = self.storageAdapter else {
+                    let error = DataStoreError.nilStorageAdapter()
+                    self.notifyDropped(count: dispositions.count, error: error)
+                    result = .failure(error)
+                    return
+                }
+                
+                guard !dispositions.isEmpty else {
+                    result = .successfulVoid
+                    return
+                }
+                
+                let publishers = dispositions.map { disposition ->
+                    Publishers.FlatMap<Future<Void, DataStoreError>,
+                                       Future<ReconcileAndLocalSaveOperation.ApplyRemoteModelResult, DataStoreError>> in
+                    
+                    switch disposition {
+                    case .create(let remoteModel):
+                        let publisher = self.save(storageAdapter: storageAdapter,
+                                                  remoteModel: remoteModel)
+                            .flatMap { applyResult in
+                                self.saveMetadata(storageAdapter: storageAdapter,
+                                                  applyResult: applyResult,
+                                                  mutationType: .create)
+                            }
+                        return publisher
+                    case .update(let remoteModel):
+                        let publisher = self.save(storageAdapter: storageAdapter,
+                                                  remoteModel: remoteModel)
+                            .flatMap { applyResult in
+                                self.saveMetadata(storageAdapter: storageAdapter,
+                                                  applyResult: applyResult,
+                                                  mutationType: .update)
+                            }
+                        return publisher
+                    case .delete(let remoteModel):
+                        let publisher = self.delete(storageAdapter: storageAdapter,
+                                                    remoteModel: remoteModel)
+                            .flatMap { applyResult in
+                                self.saveMetadata(storageAdapter: storageAdapter,
+                                                  applyResult: applyResult,
+                                                  mutationType: .delete)
+                            }
+                        return publisher
                     }
-                )
-                .store(in: &self.cancellables)
+                }
+                
+                Publishers.MergeMany(publishers)
+                    .collect()
+                    .sink(
+                        receiveCompletion: {
+                            if case .failure(let error) = $0 {
+                                result = .failure(error)
+                            }
+                        },
+                        receiveValue: { _ in
+                            result = .successfulVoid
+                        }
+                    )
+                    .store(in: &self.cancellables)
+            }
         }
-    }
-
+    
     enum ApplyRemoteModelResult {
         case applied(RemoteModel)
         case dropped
     }
-
+    
     private func delete(storageAdapter: StorageEngineAdapter,
                         remoteModel: RemoteModel) -> Future<ApplyRemoteModelResult, DataStoreError> {
         Future<ApplyRemoteModelResult, DataStoreError> { promise in
@@ -344,12 +347,15 @@ class ReconcileAndLocalSaveOperation: AsynchronousOperation {
                 promise(.failure(error))
                 return
             }
-
-            storageAdapter.delete(untypedModelType: modelType,
-                                  modelSchema: self.modelSchema,
-                                  withId: remoteModel.model.id,
-                                  condition: nil) { response in
-                switch response {
+            
+            Task {
+                let result = await storageAdapter.delete(
+                    untypedModelType: modelType,
+                    modelSchema: self.modelSchema,
+                    withId: remoteModel.model.id,
+                    condition: nil
+                )
+                switch result {
                 case .failure(let dataStoreError):
                     self.notifyDropped(error: dataStoreError)
                     if storageAdapter.shouldIgnoreError(error: dataStoreError) {
@@ -361,14 +367,20 @@ class ReconcileAndLocalSaveOperation: AsynchronousOperation {
                     promise(.success(.applied(remoteModel)))
                 }
             }
+            
         }
     }
-
-    private func save(storageAdapter: StorageEngineAdapter,
-                      remoteModel: RemoteModel) -> Future<ApplyRemoteModelResult, DataStoreError> {
+    
+    private func save(
+        storageAdapter: StorageEngineAdapter,
+        remoteModel: RemoteModel
+    ) -> Future<ApplyRemoteModelResult, DataStoreError> {
         Future<ApplyRemoteModelResult, DataStoreError> { promise in
-            storageAdapter.save(untypedModel: remoteModel.model.instance) { response in
-                switch response {
+            Task {
+                let result = await storageAdapter.save(
+                    untypedModel: remoteModel.model.instance
+                )
+                switch result {
                 case .failure(let dataStoreError):
                     self.notifyDropped(error: dataStoreError)
                     if storageAdapter.shouldIgnoreError(error: dataStoreError) {
@@ -390,19 +402,27 @@ class ReconcileAndLocalSaveOperation: AsynchronousOperation {
                     promise(.success(.applied(inProcessModel)))
                 }
             }
+            
+            
         }
     }
-
-    private func saveMetadata(storageAdapter: StorageEngineAdapter,
-                              applyResult: ApplyRemoteModelResult,
-                              mutationType: MutationEvent.MutationType) -> Future<Void, DataStoreError> {
+    
+    private func saveMetadata(
+        storageAdapter: StorageEngineAdapter,
+        applyResult: ApplyRemoteModelResult,
+        mutationType: MutationEvent.MutationType
+    ) -> Future<Void, DataStoreError> {
         Future<Void, DataStoreError> { promise in
             guard case let .applied(inProcessModel) = applyResult else {
                 promise(.successfulVoid)
                 return
             }
-
-            storageAdapter.save(inProcessModel.syncMetadata, condition: nil) { result in
+            
+            Task {
+                let result = await storageAdapter.save(
+                    inProcessModel.syncMetadata,
+                    condition: nil
+                )
                 switch result {
                 case .failure(let dataStoreError):
                     self.notifyDropped(error: dataStoreError)
@@ -415,17 +435,17 @@ class ReconcileAndLocalSaveOperation: AsynchronousOperation {
             }
         }
     }
-
+    
     private func notifyDropped(count: Int = 1, error: DataStoreError? = nil) {
         for _ in 0 ..< count {
             mutationEventPublisher.send(.mutationEventDropped(modelName: modelSchema.name, error: error))
         }
     }
-
+    
     private func notify(savedModel: AppliedModel,
                         mutationType: MutationEvent.MutationType) {
         let version = savedModel.syncMetadata.version
-
+        
         // TODO: Dispatch/notify error if we can't erase to any model? Would imply an error in JSON decoding,
         // which shouldn't be possible this late in the process. Possibly notify global conflict/error handler?
         guard let json = try? savedModel.model.instance.toJSON() else {
@@ -437,14 +457,14 @@ class ReconcileAndLocalSaveOperation: AsynchronousOperation {
                                           json: json,
                                           mutationType: mutationType,
                                           version: version)
-
+        
         let payload = HubPayload(eventName: HubPayload.EventName.DataStore.syncReceived,
                                  data: mutationEvent)
         Amplify.Hub.dispatch(to: .dataStore, payload: payload)
-
+        
         mutationEventPublisher.send(.mutationEvent(mutationEvent))
     }
-
+    
     private func notifyFinished() {
         if log.logLevel == .debug {
             log.debug("total time: \(stopwatch.stop())s")
@@ -452,7 +472,7 @@ class ReconcileAndLocalSaveOperation: AsynchronousOperation {
         mutationEventPublisher.send(completion: .finished)
         finish()
     }
-
+    
     private static func unfulfilledDataStoreError(name: String = #function) -> DataStoreError {
         .unknown("\(name) did not fulfill promise", AmplifyErrorMessages.shouldNotHappenReportBugToAWS(), nil)
     }

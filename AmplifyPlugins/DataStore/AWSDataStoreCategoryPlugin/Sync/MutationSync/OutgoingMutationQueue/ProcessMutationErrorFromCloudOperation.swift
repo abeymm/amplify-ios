@@ -15,10 +15,10 @@ import AWSPluginsCore
 /// 2. When there is a "conditional request failed" error, then emit to the Hub a 'conditionalSaveFailed' event.
 /// 3. When there is a "conflict unahandled" error, trigger the conflict handler and reconcile the state of the system.
 class ProcessMutationErrorFromCloudOperation: AsynchronousOperation {
-
+    
     typealias MutationSyncAPIRequest = GraphQLRequest<MutationSyncResult>
     typealias MutationSyncCloudResult = GraphQLOperation<MutationSync<AnyModel>>.OperationResult
-
+    
     private let dataStoreConfiguration: DataStoreConfiguration
     private let storageAdapter: StorageEngineAdapter
     private let mutationEvent: MutationEvent
@@ -27,7 +27,7 @@ class ProcessMutationErrorFromCloudOperation: AsynchronousOperation {
     private let completion: (Result<MutationEvent?, Error>) -> Void
     private var mutationOperation: AtomicValue<GraphQLOperation<MutationSync<AnyModel>>?>
     private weak var api: APICategoryGraphQLBehavior?
-
+    
     init(dataStoreConfiguration: DataStoreConfiguration,
          mutationEvent: MutationEvent,
          api: APICategoryGraphQLBehavior,
@@ -43,40 +43,40 @@ class ProcessMutationErrorFromCloudOperation: AsynchronousOperation {
         self.apiError = apiError
         self.completion = completion
         self.mutationOperation = AtomicValue(initialValue: nil)
-
+        
         super.init()
     }
-
+    
     override func main() {
         log.verbose(#function)
-
+        
         guard !isCancelled else {
             return
         }
-
+        
         if let apiError = apiError, isAuthSignedOutError(apiError: apiError) {
             dataStoreConfiguration.errorHandler(DataStoreError.api(apiError, mutationEvent))
             finish(result: .success(nil))
             return
         }
-
+        
         guard let graphQLResponseError = graphQLResponseError,
-            case let .error(graphQLErrors) = graphQLResponseError else {
-                finish(result: .success(nil))
-                return
+              case let .error(graphQLErrors) = graphQLResponseError else {
+            finish(result: .success(nil))
+            return
         }
-
+        
         guard graphQLErrors.count == 1 else {
             log.error("Received more than one error response: \(String(describing: graphQLResponseError))")
             finish(result: .success(nil))
             return
         }
-
+        
         guard let graphQLError = graphQLErrors.first else {
             finish(result: .success(nil))
             return
         }
-
+        
         if let extensions = graphQLError.extensions, case let .string(errorTypeValue) = extensions["errorType"] {
             let errorType = AppSyncErrorType(errorTypeValue)
             switch errorType {
@@ -103,17 +103,17 @@ class ProcessMutationErrorFromCloudOperation: AsynchronousOperation {
             finish(result: .success(nil))
         }
     }
-
+    
     private func isAuthSignedOutError(apiError: APIError) -> Bool {
         if case let .operationError(_, _, underlyingError) = apiError,
-            let authError = underlyingError as? AuthError,
-            case .signedOut = authError {
+           let authError = underlyingError as? AuthError,
+           case .signedOut = authError {
             return true
         }
-
+        
         return false
     }
-
+    
     private func processConflictUnhandled(_ extensions: [String: JSONValue]) {
         let localModel: Model
         do {
@@ -123,7 +123,7 @@ class ProcessMutationErrorFromCloudOperation: AsynchronousOperation {
             finish(result: .failure(error))
             return
         }
-
+        
         let remoteModel: MutationSync<AnyModel>
         switch getRemoteModel(extensions) {
         case .success(let model):
@@ -133,7 +133,7 @@ class ProcessMutationErrorFromCloudOperation: AsynchronousOperation {
             return
         }
         let latestVersion = remoteModel.syncMetadata.version
-
+        
         guard let mutationType = GraphQLMutationType(rawValue: mutationEvent.mutationType) else {
             let dataStoreError = DataStoreError.decodingError(
                 "Invalid mutation type",
@@ -147,7 +147,7 @@ class ProcessMutationErrorFromCloudOperation: AsynchronousOperation {
             finish(result: .failure(dataStoreError))
             return
         }
-
+        
         switch mutationType {
         case .create:
             let error = DataStoreError.unknown("Should never get conflict unhandled for create mutation",
@@ -160,7 +160,7 @@ class ProcessMutationErrorFromCloudOperation: AsynchronousOperation {
             processLocalModelUpdated(localModel: localModel, remoteModel: remoteModel, latestVersion: latestVersion)
         }
     }
-
+    
     private func getRemoteModel(_ extensions: [String: JSONValue]) -> Result<MutationSync<AnyModel>, Error> {
         guard case let .object(data) = extensions["data"] else {
             let error = DataStoreError.unknown("Missing remote model from the response from AppSync.",
@@ -176,7 +176,7 @@ class ProcessMutationErrorFromCloudOperation: AsynchronousOperation {
             return .failure(error)
         }
     }
-
+    
     private func processLocalModelDeleted(
         localModel: Model,
         remoteModel: MutationSync<AnyModel>,
@@ -187,7 +187,7 @@ class ProcessMutationErrorFromCloudOperation: AsynchronousOperation {
             finish(result: .success(nil))
             return
         }
-
+        
         let conflictData = DataStoreConflictData(local: localModel, remote: remoteModel.model.instance)
         dataStoreConfiguration.conflictHandler(conflictData) { result in
             switch result {
@@ -212,7 +212,7 @@ class ProcessMutationErrorFromCloudOperation: AsynchronousOperation {
             }
         }
     }
-
+    
     private func processLocalModelUpdated(
         localModel: Model,
         remoteModel: MutationSync<AnyModel>,
@@ -223,7 +223,7 @@ class ProcessMutationErrorFromCloudOperation: AsynchronousOperation {
             saveDeleteMutation(remoteModel: remoteModel)
             return
         }
-
+        
         let conflictData = DataStoreConflictData(local: localModel, remote: remoteModel.model.instance)
         let latestVersion = remoteModel.syncMetadata.version
         dataStoreConfiguration.conflictHandler(conflictData) { result in
@@ -255,74 +255,76 @@ class ProcessMutationErrorFromCloudOperation: AsynchronousOperation {
             }
         }
     }
-
+    
     // MARK: Sync to cloud
-
+    
     private func sendMutation(describedBy apiRequest: MutationSyncAPIRequest) {
         guard !isCancelled else {
             return
         }
-
+        
         guard let api = self.api else {
             log.error("\(#function): API unexpectedly nil")
             let apiError = APIError.unknown("API unexpectedly nil", "")
             finish(result: .failure(apiError))
             return
         }
-
+        
         log.verbose("\(#function) sending mutation with data: \(apiRequest)")
         let graphQLOperation = api.mutate(request: apiRequest) { [weak self] result in
             guard let self = self, !self.isCancelled else {
                 return
             }
-
+            
             self.log.verbose("sendMutationToCloud received asyncEvent: \(result)")
             self.validate(cloudResult: result, request: apiRequest)
         }
         mutationOperation.set(graphQLOperation)
     }
-
+    
     private func validate(cloudResult: MutationSyncCloudResult, request: MutationSyncAPIRequest) {
         guard !isCancelled else {
             return
         }
-
+        
         if case .failure(let error) = cloudResult {
             dataStoreConfiguration.errorHandler(error)
         }
-
+        
         if case .success(let response) = cloudResult,
-            case .failure(let error) = response {
+           case .failure(let error) = response {
             dataStoreConfiguration.errorHandler(error)
         }
-
+        
         finish(result: .success(nil))
     }
-
+    
     // MARK: Reconcile Local Store
-
+    
     private func saveDeleteMutation(remoteModel: MutationSync<AnyModel>) {
         log.verbose(#function)
         let modelName = remoteModel.model.modelName
         let id = remoteModel.model.id
-
+        
         guard let modelType = ModelRegistry.modelType(from: modelName) else {
             let error = DataStoreError.invalidModelName("Invalid Model \(modelName)")
             finish(result: .failure(error))
             return
         }
-
+        
         guard let modelSchema = ModelRegistry.modelSchema(from: modelName) else {
             let error = DataStoreError.invalidModelName("Invalid Model \(modelName)")
             finish(result: .failure(error))
             return
         }
-
-        storageAdapter.delete(untypedModelType: modelType,
-                              modelSchema: modelSchema,
-                              withId: id,
-                              condition: nil) { response in
-            switch response {
+        Task {
+            let result = await storageAdapter.delete(
+                untypedModelType: modelType,
+                modelSchema: modelSchema,
+                withId: id,
+                condition: nil
+            )
+            switch result {
             case .failure(let dataStoreError):
                 let error = DataStoreError.unknown("Delete failed \(dataStoreError)", "")
                 finish(result: .failure(error))
@@ -332,11 +334,13 @@ class ProcessMutationErrorFromCloudOperation: AsynchronousOperation {
             }
         }
     }
-
+    
     private func saveCreateOrUpdateMutation(remoteModel: MutationSync<AnyModel>) {
         log.verbose(#function)
-        storageAdapter.save(untypedModel: remoteModel.model.instance) { response in
-            switch response {
+        Task {
+            let result = await storageAdapter.save(untypedModel: remoteModel.model.instance)
+            
+            switch result {
             case .failure(let dataStoreError):
                 let error = DataStoreError.unknown("Save failed \(dataStoreError)", "")
                 self.finish(result: .failure(error))
@@ -353,13 +357,20 @@ class ProcessMutationErrorFromCloudOperation: AsynchronousOperation {
                 let inProcessModel = MutationSync(model: anyModel, syncMetadata: remoteModel.syncMetadata)
                 self.saveMetadata(storageAdapter: self.storageAdapter, inProcessModel: inProcessModel)
             }
+            
         }
     }
-
-    private func saveMetadata(storageAdapter: StorageEngineAdapter,
-                              inProcessModel: MutationSync<AnyModel>) {
+    
+    private func saveMetadata(
+        storageAdapter: StorageEngineAdapter,
+        inProcessModel: MutationSync<AnyModel>
+    ) {
         log.verbose(#function)
-        storageAdapter.save(inProcessModel.syncMetadata, condition: nil) { result in
+        Task {
+            let result = await storageAdapter.save(
+                inProcessModel.syncMetadata,
+                condition: nil
+            )
             switch result {
             case .failure(let dataStoreError):
                 let error = DataStoreError.unknown("Save metadata failed \(dataStoreError)", "")
@@ -369,16 +380,17 @@ class ProcessMutationErrorFromCloudOperation: AsynchronousOperation {
                 let appliedModel = MutationSync(model: inProcessModel.model, syncMetadata: syncMetadata)
                 self.notify(savedModel: appliedModel)
             }
+            
         }
     }
-
+    
     private func notify(savedModel: MutationSync<AnyModel>) {
         log.verbose(#function)
-
+        
         guard !isCancelled else {
             return
         }
-
+        
         let mutationType: MutationEvent.MutationType
         let version = savedModel.syncMetadata.version
         if savedModel.syncMetadata.deleted {
@@ -388,29 +400,29 @@ class ProcessMutationErrorFromCloudOperation: AsynchronousOperation {
         } else {
             mutationType = .update
         }
-
+        
         guard let mutationEvent = try? MutationEvent(untypedModel: savedModel.model.instance,
                                                      mutationType: mutationType,
                                                      version: version)
-            else {
-                let error = DataStoreError.unknown("Could not create MutationEvent", "")
-                finish(result: .failure(error))
-                return
+        else {
+            let error = DataStoreError.unknown("Could not create MutationEvent", "")
+            finish(result: .failure(error))
+            return
         }
-
+        
         let payload = HubPayload(eventName: HubPayload.EventName.DataStore.syncReceived,
                                  data: mutationEvent)
         Amplify.Hub.dispatch(to: .dataStore, payload: payload)
-
+        
         finish(result: .success(mutationEvent))
     }
-
+    
     override func cancel() {
         mutationOperation.get()?.cancel()
         let error = DataStoreError(error: OperationCancelledError())
         finish(result: .failure(error))
     }
-
+    
     private func finish(result: Result<MutationEvent?, Error>) {
         mutationOperation.with { operation in
             operation?.removeResultListener()

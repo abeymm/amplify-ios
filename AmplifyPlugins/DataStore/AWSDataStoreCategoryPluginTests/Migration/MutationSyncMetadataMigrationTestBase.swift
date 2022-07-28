@@ -47,7 +47,8 @@ class MutationSyncMetadataMigrationTestBase: XCTestCase {
 
     func save<M: Model>(_ model: M) {
         let saveSuccess = expectation(description: "Save successful")
-        storageAdapter.save(model) { result in
+        Task {
+            let result = await storageAdapter.save(model)
             switch result {
             case .success: saveSuccess.fulfill()
             case .failure(let error): XCTFail("\(error.errorDescription)")
@@ -56,44 +57,44 @@ class MutationSyncMetadataMigrationTestBase: XCTestCase {
         wait(for: [saveSuccess], timeout: 1)
     }
 
-    func saveMutationSyncMetadata(_ metadata: MutationSyncMetadata) {
+    func saveMutationSyncMetadata(_ metadata: MutationSyncMetadata) async {
         let saveMetadataSuccess = expectation(description: "Save metadata successful")
-        storageAdapter.save(metadata) { result in
-            switch result {
-            case .success: saveMetadataSuccess.fulfill()
-            case .failure(let error): XCTFail("\(error.errorDescription)")
-            }
+        
+        let result = await storageAdapter.save(metadata)
+        switch result {
+        case .success: saveMetadataSuccess.fulfill()
+        case .failure(let error): XCTFail("\(error.errorDescription)")
         }
+        
         wait(for: [saveMetadataSuccess], timeout: 1)
     }
 
-    func queryMutationSyncMetadata() -> [MutationSyncMetadata]? {
+    func queryMutationSyncMetadata() async -> [MutationSyncMetadata]? {
         let firstQueryModelSyncMetadata = expectation(description: "query successful")
         var result: [MutationSyncMetadata]?
-        storageAdapter.query(MutationSyncMetadata.self) {
-            switch $0 {
-            case .success(let mutationSyncMetadatas):
-                result = mutationSyncMetadatas
-                firstQueryModelSyncMetadata.fulfill()
-            case .failure(let error): XCTFail("\(error.errorDescription)")
-            }
-        }
         wait(for: [firstQueryModelSyncMetadata], timeout: 1)
+        let r = await storageAdapter.query(MutationSyncMetadata.self)
+        switch r {
+        case .success(let mutationSyncMetadatas):
+            result = mutationSyncMetadatas
+            firstQueryModelSyncMetadata.fulfill()
+        case .failure(let error): XCTFail("\(error.errorDescription)")
+        }
+        
         return result
     }
 
-    func queryModelSyncMetadata() -> [ModelSyncMetadata]? {
+    func queryModelSyncMetadata() async -> [ModelSyncMetadata]? {
         let queryModelSyncMetadata = expectation(description: "query model sync metadata successful")
         var result: [ModelSyncMetadata]?
-        storageAdapter.query(ModelSyncMetadata.self) {
-            switch $0 {
-            case .success(let modelSyncMetadatas):
-                result = modelSyncMetadatas
-                queryModelSyncMetadata.fulfill()
-            case .failure(let error): XCTFail("\(error.errorDescription)")
-            }
-        }
         wait(for: [queryModelSyncMetadata], timeout: 1)
+        let r = await storageAdapter.query(ModelSyncMetadata.self)
+        switch r {
+        case .success(let modelSyncMetadatas):
+            result = modelSyncMetadatas
+            queryModelSyncMetadata.fulfill()
+        case .failure(let error): XCTFail("\(error.errorDescription)")
+        }
         return result
     }
 }

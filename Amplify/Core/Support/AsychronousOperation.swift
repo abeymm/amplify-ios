@@ -7,6 +7,24 @@
 
 import Foundation
 
+//#if swift(>=5.5.2)
+
+import Foundation
+
+//@available(iOS 13.0, macOS 10.15, tvOS 13.0, watchOS 6.0, *)
+
+
+//#endif
+
+class BsynchronousOperation {
+//    let taskQueue = TaskQueue.init()
+    let lock: UnsafeMutablePointer<os_unfair_lock> = {
+        let p = UnsafeMutablePointer<os_unfair_lock>.allocate(capacity: 1)
+        p.initialize(to: .init())
+        return p
+    }()    
+}
+
 /// This class is to facilitate executing asychronous requests. The caller can transition the operation to its finished
 /// state by calling finish() in the callback of an asychronous request to ensure that the operation is only removed
 /// from the OperationQueue after it has completed all its work. This class is not inherently thread safe. Although it
@@ -98,3 +116,4 @@ open class AsynchronousOperation: Operation {
         }
     }
 }
+

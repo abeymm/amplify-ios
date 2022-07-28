@@ -85,6 +85,7 @@ class BaseDataStoreTests: XCTestCase {
         let semaphore = DispatchSemaphore(value: 0)
 
         func save(model: M, index: Int) {
+            
             storageAdapter.save(model) {
                 switch $0 {
                 case .success:

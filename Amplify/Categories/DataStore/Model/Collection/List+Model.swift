@@ -42,15 +42,16 @@ public class List<ModelType: Model>: Collection, Codable, ExpressibleByArrayLite
             case .loaded(let elements):
                 return elements
             case .notLoaded:
-                let result = listProvider.load()
-                switch result {
-                case .success(let elements):
-                    loadedState = .loaded(elements)
-                    return elements
-                case .failure(let error):
-                    Amplify.log.error(error: error)
-                    return []
-                }
+                return []
+//                let result = listProvider.load { _ in }
+//                switch result {
+//                case .success(let elements):
+//                    loadedState = .loaded(elements)
+//                    return elements
+//                case .failure(let error):
+//                    Amplify.log.error(error: error)
+//                    return []
+//                }
             }
         }
         set {

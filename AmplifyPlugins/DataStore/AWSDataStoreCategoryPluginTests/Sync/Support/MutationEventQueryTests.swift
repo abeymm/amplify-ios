@@ -15,12 +15,13 @@ import XCTest
 @testable import AWSPluginsCore
 
 class MutationEventQueryTests: BaseDataStoreTests {
-
+    
     func testQueryPendingMutation_EmptyResult() {
         let querySuccess = expectation(description: "query mutation events success")
         let modelIds = [UUID().uuidString, UUID().uuidString]
-
-        MutationEvent.pendingMutationEvents(for: modelIds, storageAdapter: storageAdapter) { result in
+        
+        Task {
+            let result = await MutationEvent.pendingMutationEvents(for: modelIds, storageAdapter: storageAdapter)
             switch result {
             case .success(let mutationEvents):
                 XCTAssertTrue(mutationEvents.isEmpty)
@@ -28,19 +29,19 @@ class MutationEventQueryTests: BaseDataStoreTests {
             case .failure(let error): XCTFail("\(error)")
             }
         }
-
+        
         wait(for: [querySuccess], timeout: 1)
     }
-
+    
     func testQueryPendingMutationEvent() {
         let mutationEvent = MutationEvent(id: UUID().uuidString,
                                           modelId: UUID().uuidString,
                                           modelName: Post.modelName,
                                           json: "",
                                           mutationType: .create)
-
+        
         let querySuccess = expectation(description: "query for pending mutation events")
-
+        
         storageAdapter.save(mutationEvent) { result in
             switch result {
             case .success:
@@ -59,7 +60,7 @@ class MutationEventQueryTests: BaseDataStoreTests {
         }
         wait(for: [querySuccess], timeout: 1)
     }
-
+    
     func testQueryPendingMutationEventsForModelIds() {
         let mutationEvent1 = MutationEvent(id: UUID().uuidString,
                                            modelId: UUID().uuidString,
@@ -71,7 +72,7 @@ class MutationEventQueryTests: BaseDataStoreTests {
                                            modelName: Post.modelName,
                                            json: "",
                                            mutationType: .create)
-
+        
         let saveMutationEvent1 = expectation(description: "save mutationEvent1 success")
         storageAdapter.save(mutationEvent1) { result in
             guard case .success = result else {
@@ -81,7 +82,7 @@ class MutationEventQueryTests: BaseDataStoreTests {
             saveMutationEvent1.fulfill()
         }
         wait(for: [saveMutationEvent1], timeout: 1)
-
+        
         let saveMutationEvent2 = expectation(description: "save mutationEvent1 success")
         storageAdapter.save(mutationEvent2) { result in
             guard case .success = result else {
@@ -91,7 +92,7 @@ class MutationEventQueryTests: BaseDataStoreTests {
             saveMutationEvent2.fulfill()
         }
         wait(for: [saveMutationEvent2], timeout: 1)
-
+        
         let querySuccess = expectation(description: "query for metadata success")
         var modelIds = [mutationEvent1.modelId]
         modelIds.append(contentsOf: (1 ... 999).map { _ in UUID().uuidString })
@@ -105,7 +106,7 @@ class MutationEventQueryTests: BaseDataStoreTests {
             case .failure(let error): XCTFail("\(error)")
             }
         }
-
+        
         wait(for: [querySuccess], timeout: 1)
     }
 }

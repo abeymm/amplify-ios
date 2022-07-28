@@ -80,6 +80,25 @@ class MockSQLiteStorageEngineAdapter: StorageEngineAdapter {
     }
 
     // MARK: - StorageEngineAdapter
+    
+    func delete<M: Model>(
+        _ modelType: M.Type,
+        modelSchema: ModelSchema,
+        withId id: Model.Identifier,
+        condition: QueryPredicate?
+    ) async -> DataStoreResult<M?> {
+        XCTFail("Not expected to execute")
+        return .success(nil)
+    }
+    
+    func delete<M: Model>(
+        _ modelType: M.Type,
+        modelSchema: ModelSchema,
+        filter: QueryPredicate
+    ) async -> DataStoreResult<[M]> {
+        XCTFail("Not expected to execute")
+        return .success([])
+    }
 
     func delete<M: Model>(_ modelType: M.Type,
                           modelSchema: ModelSchema,
@@ -96,6 +115,23 @@ class MockSQLiteStorageEngineAdapter: StorageEngineAdapter {
         XCTFail("Not expected to execute")
     }
 
+    func delete(
+        untypedModelType modelType: Model.Type,
+        modelSchema: ModelSchema,
+        withId id: Model.Identifier,
+        condition: QueryPredicate?
+    ) async -> DataStoreResult<Void> {
+        await withCheckedContinuation { continuation in
+            delete(
+                untypedModelType: modelType,
+                modelSchema: modelSchema,
+                withId: id,
+                completion: continuation.resume(returning:)
+            )
+        }
+    }
+
+    
     func delete(untypedModelType modelType: Model.Type,
                 modelSchema: ModelSchema,
                 withId id: String,
@@ -112,6 +148,19 @@ class MockSQLiteStorageEngineAdapter: StorageEngineAdapter {
             : completion(.emptyResult)
     }
 
+    func query(
+        modelSchema: ModelSchema,
+        predicate: QueryPredicate?
+    ) async -> DataStoreResult<[Model]> {
+        await withCheckedContinuation {
+            query(
+                modelSchema: modelSchema,
+                predicate: predicate,
+                completion: $0.resume(returning:)
+            )
+        }
+    }
+    
     func query(modelSchema: ModelSchema,
                predicate: QueryPredicate?,
                completion: DataStoreCallback<[Model]>) {
@@ -237,6 +286,15 @@ class MockSQLiteStorageEngineAdapter: StorageEngineAdapter {
         }
         try basicClosure()
     }
+    
+    func transaction(_ basicClosure: () async throws -> Void) throws {
+        if let err = errorToThrowOnTransaction {
+            errorToThrowOnTransaction = nil
+            throw err
+        }
+        try basicClosure()
+    }
+
 
     func clear(completion: @escaping DataStoreCallback<Void>) {
 
