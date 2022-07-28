@@ -39,7 +39,67 @@
             </BuildableReference>
             <SkippedTests>
                <Test
+                  Identifier = "CascadeDeleteOperationTests">
+               </Test>
+               <Test
+                  Identifier = "CascadeDeleteOperationTests/testDeleteWithAssociatedModels()">
+               </Test>
+               <Test
+                  Identifier = "CascadeDeleteOperationTests/testDeleteWithAssociatedModels_SingleFailure()">
+               </Test>
+               <Test
+                  Identifier = "CascadeDeleteOperationTests/testWithFilter()">
+               </Test>
+               <Test
+                  Identifier = "CascadeDeleteOperationTests/testWithFilter_NoneMatching()">
+               </Test>
+               <Test
+                  Identifier = "CascadeDeleteOperationTests/testWithFilter_WithSync()">
+               </Test>
+               <Test
+                  Identifier = "CascadeDeleteOperationTests/testWithIdAndCondition_InvalidCondition()">
+               </Test>
+               <Test
+                  Identifier = "DataStoreListProviderFunctionalTests">
+               </Test>
+               <Test
+                  Identifier = "DataStoreListProviderTests">
+               </Test>
+               <Test
+                  Identifier = "ListTests">
+               </Test>
+               <Test
+                  Identifier = "LocalSubscriptionTests">
+               </Test>
+               <Test
+                  Identifier = "LocalSubscriptionWithJSONModelTests">
+               </Test>
+               <Test
                   Identifier = "MutationEventExtensionsTest">
+               </Test>
+               <Test
+                  Identifier = "MutationIngesterConflictResolutionTests/testDeleteMutationAppendedToInProcessQueue()">
+               </Test>
+               <Test
+                  Identifier = "MutationSyncMetadataMigrationTests/testApply()">
+               </Test>
+               <Test
+                  Identifier = "SQLiteMutationSyncMetadataMigrationDelegateTests">
+               </Test>
+               <Test
+                  Identifier = "SQLiteMutationSyncMetadataMigrationDelegateTests/testMigrate()">
+               </Test>
+               <Test
+                  Identifier = "StorageEngineTestsHasMany">
+               </Test>
+               <Test
+                  Identifier = "StorageEngineTestsHasOne">
+               </Test>
+               <Test
+                  Identifier = "StorageEngineTestsOptionalAssociation/testPostSelectStatement()">
+               </Test>
+               <Test
+                  Identifier = "StorageEngineTestsOptionalAssociation/testPostWithBlogSelectStatement()">
                </Test>
             </SkippedTests>
          </TestableReference>

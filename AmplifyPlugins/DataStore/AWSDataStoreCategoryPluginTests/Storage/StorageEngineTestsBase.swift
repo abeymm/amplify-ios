@@ -25,7 +25,7 @@ class StorageEngineTestsBase: XCTestCase {
      * in these conveinence methods.  Failures should be handled in the body of the unit test.
      */
     func saveModelSynchronous<M: Model>(model: M) -> DataStoreResult<M> {
-        let saveFinished = expectation(description: "Save finished")
+//        let saveFinished = expectation(description: "Save finished")
         var result: DataStoreResult<M>?
 
         result = .success(model)
@@ -33,7 +33,7 @@ class StorageEngineTestsBase: XCTestCase {
 //            result = sResult
 //            saveFinished.fulfill()
 //        }
-        wait(for: [saveFinished], timeout: defaultTimeout)
+//        wait(for: [saveFinished], timeout: defaultTimeout)
         guard let saveResult = result else {
             return .failure(causedBy: "Save operation timed out")
         }
@@ -58,18 +58,18 @@ class StorageEngineTestsBase: XCTestCase {
     }
 
     func queryModelSynchronous<M: Model>(modelType: M.Type, predicate: QueryPredicate) async -> DataStoreResult<[M]> {
-        let queryFinished = expectation(description: "Query Finished")
-        var result: DataStoreResult<[M]>?
+//        let queryFinished = expectation(description: "Query Finished")
+//        var result: DataStoreResult<[M]>?
 
-        wait(for: [queryFinished], timeout: defaultTimeout)
-        let queryResult = await storageEngine.query(modelType, predicate: predicate)
-        result = queryResult
-        queryFinished.fulfill()
-
-        guard let queryResult = result else {
-            return .failure(causedBy: "Query operation timed out")
-        }
-        return queryResult
+//        wait(for: [queryFinished], timeout: defaultTimeout)
+//        let queryResult = await storageEngine.query(modelType, predicate: predicate)
+//        result = queryResult
+//        queryFinished.fulfill()
+        let result = await storageEngine.query(modelType, predicate: predicate)
+//        guard let queryResult = result else {
+//            return .failure(causedBy: "Query operation timed out")
+//        }
+        return result
     }
 
     func deleteModelSynchronousOrFailOtherwise<M: Model>(
@@ -101,8 +101,8 @@ class StorageEngineTestsBase: XCTestCase {
         timeout: TimeInterval = 10
     ) async -> DataStoreResult<M?> {
         
-        let deleteFinished = expectation(description: "Delete Finished")
-        wait(for: [deleteFinished], timeout: timeout)
+//        let deleteFinished = expectation(description: "Delete Finished")
+//        wait(for: [deleteFinished], timeout: timeout)
         var result: DataStoreResult<M?>?
 
         let deleteResult = await storageEngine.delete(
@@ -113,7 +113,7 @@ class StorageEngineTestsBase: XCTestCase {
         )
         
         result = deleteResult
-        deleteFinished.fulfill()
+//        deleteFinished.fulfill()
             
         guard let deleteResult = result else {
             return .failure(causedBy: "Delete operation timed out")

@@ -26,10 +26,12 @@ class DataStoreListProviderFunctionalTests: BaseDataStoreTests {
             XCTFail("Should be loaded")
             return
         }
+        
         guard case .success(let comments) = results else {
             XCTFail("Should be .success")
             return
         }
+        
         XCTAssertEqual(comments.count, 2)
     }
 
@@ -40,7 +42,7 @@ class DataStoreListProviderFunctionalTests: BaseDataStoreTests {
             XCTFail("Should not be loaded")
             return
         }
-        let loadComplete = expectation(description: "Load completed")
+//        let loadComplete = expectation(description: "Load completed")
         provider.load { result in
             switch result {
             case .success(let results):
@@ -49,12 +51,12 @@ class DataStoreListProviderFunctionalTests: BaseDataStoreTests {
                     return
                 }
                 XCTAssertEqual(results.count, 2)
-                loadComplete.fulfill()
+//                loadComplete.fulfill()
             case .failure(let error):
                 XCTFail("\(error)")
             }
         }
-        wait(for: [loadComplete], timeout: 1)
+//        wait(for: [loadComplete], timeout: 1)
     }
 
     // MARK: - Helpers

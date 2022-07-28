@@ -482,18 +482,19 @@ class InitialSyncOperationTests: XCTestCase {
         try storageAdapter.setUp(modelSchemas: StorageEngine.systemModelSchemas + [MockSynced.schema])
 
         let syncMetadata = ModelSyncMetadata(id: MockSynced.modelName, lastSync: startDateMilliseconds)
-        let syncMetadataSaved = expectation(description: "Sync metadata saved")
-        wait(for: [syncMetadataSaved], timeout: 1.0)
+//        let syncMetadataSaved = expectation(description: "Sync metadata saved")
+//        wait(for: [syncMetadataSaved], timeout: 1.0)
         
         let result = await storageAdapter.save(syncMetadata)
         switch result {
         case .failure(let dataStoreError):
             XCTAssertNil(dataStoreError)
         case .success:
-            syncMetadataSaved.fulfill()
+            break
+//            syncMetadataSaved.fulfill()
         }
 
-        let apiWasQueried = expectation(description: "API was queried for a PaginatedList of AnyModel")
+//        let apiWasQueried = expectation(description: "API was queried for a PaginatedList of AnyModel")
         let responder = QueryRequestListenerResponder<PaginatedList<AnyModel>> { request, listener in
             let lastSync = request.variables?["lastSync"] as? Int
             XCTAssertEqual(lastSync, startDateMilliseconds)
@@ -501,7 +502,7 @@ class InitialSyncOperationTests: XCTestCase {
             let list = PaginatedList<AnyModel>(items: [], nextToken: nil, startedAt: nil)
             let event: GraphQLOperation<PaginatedList<AnyModel>>.OperationResult = .success(.success(list))
             listener?(event)
-            apiWasQueried.fulfill()
+//            apiWasQueried.fulfill()
             return nil
         }
 
@@ -553,14 +554,14 @@ class InitialSyncOperationTests: XCTestCase {
         try storageAdapter.setUp(modelSchemas: StorageEngine.systemModelSchemas + [MockSynced.schema])
 
         let syncMetadata = ModelSyncMetadata(id: MockSynced.modelName, lastSync: startDateMilliSeconds)
-        let syncMetadataSaved = expectation(description: "Sync metadata saved")
-        wait(for: [syncMetadataSaved], timeout: 1.0)
+//        let syncMetadataSaved = expectation(description: "Sync metadata saved")
+//        wait(for: [syncMetadataSaved], timeout: 1.0)
         let result = await storageAdapter.save(syncMetadata)
         switch result {
         case .failure(let dataStoreError):
             XCTAssertNil(dataStoreError)
-        case .success:
-            syncMetadataSaved.fulfill()
+        case .success: break
+//            syncMetadataSaved.fulfill()
         }
         
         let apiWasQueried = expectation(description: "API was queried for a PaginatedList of AnyModel")

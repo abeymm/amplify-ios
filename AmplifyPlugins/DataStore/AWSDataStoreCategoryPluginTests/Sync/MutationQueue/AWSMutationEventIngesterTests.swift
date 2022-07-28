@@ -75,17 +75,16 @@ class AWSMutationEventIngesterTests: XCTestCase {
                         content: "Post content",
                         createdAt: .now())
 
-        let saveCompleted = expectation(description: "Local save completed")
-        wait(for: [saveCompleted], timeout: 1.0)
+//        let saveCompleted = expectation(description: "Local save completed")
         let result = await Amplify.DataStore.save(post)
         if case .failure(let dataStoreError) = result {
             XCTFail(String(describing: dataStoreError))
             return
         }
-        saveCompleted.fulfill()
+//        wait(for: [saveCompleted], timeout: 1.0)
+//        saveCompleted.fulfill()
 
-        let mutationEventQueryCompleted = expectation(description: "Mutation event query completed")
-        wait(for: [mutationEventQueryCompleted], timeout: 1.0)
+//        let mutationEventQueryCompleted = expectation(description: "Mutation event query completed")
         let r2 = await storageAdapter.query(MutationEvent.self)
         let mutationEvents: [MutationEvent]
         switch r2 {
@@ -95,10 +94,11 @@ class AWSMutationEventIngesterTests: XCTestCase {
         case .success(let eventsFromResult):
             mutationEvents = eventsFromResult
         }
-        
+//        wait(for: [mutationEventQueryCompleted], timeout: 1.0)
+
         XCTAssert(!mutationEvents.isEmpty)
         XCTAssert(mutationEvents.first?.json.contains(post.id) ?? false)
-        mutationEventQueryCompleted.fulfill()
+//        mutationEventQueryCompleted.fulfill()
 
 
     }

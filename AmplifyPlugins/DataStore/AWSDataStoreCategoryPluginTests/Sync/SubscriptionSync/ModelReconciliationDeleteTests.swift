@@ -37,10 +37,10 @@ class ModelReconciliationDeleteTests: SyncEngineTestBase {
                                                      deleted: true,
                                                      lastChangedAt: Date().unixSeconds,
                                                      version: 2)
-        let localMetadataSaved = expectation(description: "Local metadata saved")
-        wait(for: [localMetadataSaved], timeout: 1.0)
-        await storageAdapter.save(localSyncMetadata)
-        localMetadataSaved.fulfill()
+//        let localMetadataSaved = expectation(description: "Local metadata saved")
+//        wait(for: [localMetadataSaved], timeout: 1.0)
+        _ = await storageAdapter.save(localSyncMetadata)
+//        localMetadataSaved.fulfill()
         
         var valueListenerFromRequest: MutationSyncInProcessListener?
         
@@ -59,7 +59,7 @@ class ModelReconciliationDeleteTests: SyncEngineTestBase {
             mockRemoteSyncEngineFor_testUpdateAfterDelete()
             try startAmplifyAndWaitForSync()
         }
-        wait(for: [expectationListener], timeout: 2.0)
+//        wait(for: [expectationListener], timeout: 2.0)
         
         guard let valueListener = valueListenerFromRequest else {
             XCTFail("Incoming responder didn't set up listener")
