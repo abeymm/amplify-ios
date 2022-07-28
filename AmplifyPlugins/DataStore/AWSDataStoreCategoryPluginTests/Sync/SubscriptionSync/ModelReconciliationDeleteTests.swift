@@ -38,8 +38,9 @@ class ModelReconciliationDeleteTests: SyncEngineTestBase {
                                                      lastChangedAt: Date().unixSeconds,
                                                      version: 2)
         let localMetadataSaved = expectation(description: "Local metadata saved")
-        storageAdapter.save(localSyncMetadata) { _ in localMetadataSaved.fulfill() }
         wait(for: [localMetadataSaved], timeout: 1.0)
+        await storageAdapter.save(localSyncMetadata)
+        localMetadataSaved.fulfill()
 
         var valueListenerFromRequest: MutationSyncInProcessListener?
 

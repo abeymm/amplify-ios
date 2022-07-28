@@ -100,7 +100,7 @@ class LocalSubscriptionWithJSONModelTests: XCTestCase {
     ///    - I get a publisher observing a model
     /// - Then:
     ///    - I receive notifications for updates to that model
-    func testPublisher() {
+    func testPublisher() async {
 
         let receivedMutationEvent = expectation(description: "Received mutation event")
 
@@ -126,8 +126,8 @@ class LocalSubscriptionWithJSONModelTests: XCTestCase {
                     "createdAt": .string(createdAt)] as [String: JSONValue]
         let model = DynamicModel(values: post)
         let postSchema = ModelRegistry.modelSchema(from: "Post")!
-        dataStorePlugin.save(model, modelSchema: postSchema) { _ in }
         wait(for: [receivedMutationEvent], timeout: 1.0)
+        _ = await dataStorePlugin.save(model, modelSchema: postSchema)
         subscription.cancel()
     }
 
@@ -137,7 +137,7 @@ class LocalSubscriptionWithJSONModelTests: XCTestCase {
     ///    - I perform mutation for Post and Comment
     /// - Then:
     ///    - I receive notifications for updates to both Post and Comment
-    func testPublisherWithMultipleCreate() {
+    func testPublisherWithMultipleCreate() async {
 
         let receivedPostMutationEvent = expectation(description: "Received post mutation event")
         let receivedCommentMutationEvent = expectation(description: "Received Comment mutation event")
@@ -171,7 +171,7 @@ class LocalSubscriptionWithJSONModelTests: XCTestCase {
                     "createdAt": .string(createdAt)] as [String: JSONValue]
         let model = DynamicModel(values: post)
         let postSchema = ModelRegistry.modelSchema(from: "Post")!
-        dataStorePlugin.save(model, modelSchema: postSchema) { _ in }
+        _ = await dataStorePlugin.save(model, modelSchema: postSchema)
 
         // insert a comment
         let commentContent = "some content"
@@ -180,16 +180,16 @@ class LocalSubscriptionWithJSONModelTests: XCTestCase {
                     "post": .object(model.values)] as [String: JSONValue]
         let commentModel = DynamicModel(values: comment)
         let commentSchema = ModelRegistry.modelSchema(from: "Comment")!
-        dataStorePlugin.save(commentModel, modelSchema: commentSchema) { result in
-            switch result {
-            case .failure(let error):
-                print(error)
-            case .success(let model):
-                print(model)
-            }
-        }
-
         wait(for: [receivedPostMutationEvent, receivedCommentMutationEvent], timeout: 3.0)
+
+        let result = await dataStorePlugin.save(commentModel, modelSchema: commentSchema)
+        switch result {
+        case .failure(let error):
+            print(error)
+        case .success(let model):
+            print(model)
+        }
+        
         subscription.cancel()
     }
 
@@ -198,7 +198,7 @@ class LocalSubscriptionWithJSONModelTests: XCTestCase {
     ///    - I subscribe to model events
     /// - Then:
     ///    - I am notified of `create` mutations
-    func testCreate() {
+    func testCreate() async {
 
         let receivedMutationEvent = expectation(description: "Received mutation event")
 
@@ -224,8 +224,8 @@ class LocalSubscriptionWithJSONModelTests: XCTestCase {
                     "createdAt": .string(createdAt)] as [String: JSONValue]
         let model = DynamicModel(values: post)
         let postSchema = ModelRegistry.modelSchema(from: "Post")!
-        dataStorePlugin.save(model, modelSchema: postSchema) { _ in }
         wait(for: [receivedMutationEvent], timeout: 1.0)
+        _ = await dataStorePlugin.save(model, modelSchema: postSchema)
 
         subscription.cancel()
     }
@@ -235,7 +235,7 @@ class LocalSubscriptionWithJSONModelTests: XCTestCase {
     ///    - I subscribe to model events
     /// - Then:
     ///    - I am notified of `update` mutations
-    func testUpdate() {
+    func testUpdate() async {
         let originalContent = "Content as of \(Date())"
         let title = "a title"
         let createdAt = Temporal.DateTime.now().iso8601String
@@ -246,18 +246,17 @@ class LocalSubscriptionWithJSONModelTests: XCTestCase {
         let postSchema = ModelRegistry.modelSchema(from: "Post")!
 
         let saveCompleted = expectation(description: "Save complete")
-        dataStorePlugin.save(model, modelSchema: postSchema) { _ in
-            saveCompleted.fulfill()
-        }
-
         wait(for: [saveCompleted], timeout: 5.0)
-
+        _ = await dataStorePlugin.save(model, modelSchema: postSchema)
+        saveCompleted.fulfill()
+        
         let newContent = "Updated content as of \(Date())"
         var newModel = model
         newModel.values["content"] = JSONValue.string(newContent)
         newModel.values["createdAt"] = JSONValue.string(Temporal.DateTime.now().iso8601String)
 
         let receivedMutationEvent = expectation(description: "Received mutation event")
+        wait(for: [receivedMutationEvent], timeout: 1.0)
 
         let subscription = dataStorePlugin.publisher(for: "Post").sink(
             receiveCompletion: { completion in
@@ -273,9 +272,7 @@ class LocalSubscriptionWithJSONModelTests: XCTestCase {
                 }
             })
 
-        dataStorePlugin.save(newModel, modelSchema: postSchema) { _ in }
-
-        wait(for: [receivedMutationEvent], timeout: 1.0)
+        _ = await dataStorePlugin.save(newModel, modelSchema: postSchema)
 
         subscription.cancel()
     }

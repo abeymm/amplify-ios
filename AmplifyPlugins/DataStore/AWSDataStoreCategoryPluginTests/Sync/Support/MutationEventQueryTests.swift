@@ -33,7 +33,7 @@ class MutationEventQueryTests: BaseDataStoreTests {
         wait(for: [querySuccess], timeout: 1)
     }
     
-    func testQueryPendingMutationEvent() {
+    func testQueryPendingMutationEvent() async {
         let mutationEvent = MutationEvent(id: UUID().uuidString,
                                           modelId: UUID().uuidString,
                                           modelName: Post.modelName,
@@ -41,24 +41,24 @@ class MutationEventQueryTests: BaseDataStoreTests {
                                           mutationType: .create)
         
         let querySuccess = expectation(description: "query for pending mutation events")
+        wait(for: [querySuccess], timeout: 1)
         
-        storageAdapter.save(mutationEvent) { result in
-            switch result {
-            case .success:
-                MutationEvent.pendingMutationEvents(for: mutationEvent.modelId,
-                                                    storageAdapter: self.storageAdapter) { result in
-                    switch result {
-                    case .success(let mutationEvents):
-                        XCTAssertEqual(mutationEvents.count, 1)
-                        XCTAssertEqual(mutationEvents.first?.id, mutationEvent.id)
-                        querySuccess.fulfill()
-                    case .failure(let error): XCTFail("\(error)")
-                    }
-                }
+        let result = await storageAdapter.save(mutationEvent)
+        switch result {
+        case .success:
+            let r2 = await MutationEvent.pendingMutationEvents(
+                for: mutationEvent.modelId,
+                storageAdapter: self.storageAdapter
+            )
+            switch r2 {
+            case .success(let mutationEvents):
+                XCTAssertEqual(mutationEvents.count, 1)
+                XCTAssertEqual(mutationEvents.first?.id, mutationEvent.id)
+                querySuccess.fulfill()
             case .failure(let error): XCTFail("\(error)")
             }
+        case .failure(let error): XCTFail("\(error)")
         }
-        wait(for: [querySuccess], timeout: 1)
     }
     
     func testQueryPendingMutationEventsForModelIds() {

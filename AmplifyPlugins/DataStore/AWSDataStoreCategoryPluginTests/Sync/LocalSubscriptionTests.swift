@@ -98,7 +98,7 @@ class LocalSubscriptionTests: XCTestCase {
     ///    - I get a publisher observing a model
     /// - Then:
     ///    - I receive notifications for updates to that model
-    func testPublisher() {
+    func testPublisher() async {
         let receivedMutationEvent = expectation(description: "Received mutation event")
 
         let subscription = Amplify.DataStore.publisher(for: Post.self).sink(
@@ -180,11 +180,9 @@ class LocalSubscriptionTests: XCTestCase {
                          comments: [])
 
         let saveCompleted = expectation(description: "Save complete")
-        Amplify.DataStore.save(model) { _ in
-            saveCompleted.fulfill()
-        }
-
         wait(for: [saveCompleted], timeout: 5.0)
+        _ = await Amplify.DataStore.save(model)
+        saveCompleted.fulfill()        
 
         let newContent = "Updated content as of \(Date())"
         var newModel = model

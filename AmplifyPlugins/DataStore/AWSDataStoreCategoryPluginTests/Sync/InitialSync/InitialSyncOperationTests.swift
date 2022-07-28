@@ -612,7 +612,7 @@ class InitialSyncOperationTests: XCTestCase {
 
         operation.main()
 
-        waitForExpectations(timeout: 1)
+        await waitForExpectations(timeout: 1)
         sink.cancel()
     }
 

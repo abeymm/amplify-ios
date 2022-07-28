@@ -40,8 +40,8 @@ class StorageEngineTestsBase: XCTestCase {
         return saveResult
     }
 
-    func querySingleModelSynchronous<M: Model>(modelType: M.Type, predicate: QueryPredicate) -> DataStoreResult<M> {
-        let result = queryModelSynchronous(modelType: modelType, predicate: predicate)
+    func querySingleModelSynchronous<M: Model>(modelType: M.Type, predicate: QueryPredicate) async -> DataStoreResult<M> {
+        let result = await queryModelSynchronous(modelType: modelType, predicate: predicate)
 
         switch result {
         case .success(let models):
@@ -57,27 +57,28 @@ class StorageEngineTestsBase: XCTestCase {
         }
     }
 
-    func queryModelSynchronous<M: Model>(modelType: M.Type, predicate: QueryPredicate) -> DataStoreResult<[M]> {
+    func queryModelSynchronous<M: Model>(modelType: M.Type, predicate: QueryPredicate) async -> DataStoreResult<[M]> {
         let queryFinished = expectation(description: "Query Finished")
         var result: DataStoreResult<[M]>?
 
-        storageEngine.query(modelType, predicate: predicate) { qResult in
-            result = qResult
-            queryFinished.fulfill()
-        }
-
         wait(for: [queryFinished], timeout: defaultTimeout)
+        let queryResult = await storageEngine.query(modelType, predicate: predicate)
+        result = queryResult
+        queryFinished.fulfill()
+
         guard let queryResult = result else {
             return .failure(causedBy: "Query operation timed out")
         }
         return queryResult
     }
 
-    func deleteModelSynchronousOrFailOtherwise<M: Model>(modelType: M.Type,
-                                                         withId id: String,
-                                                         where predicate: QueryPredicate? = nil,
-                                                         timeout: TimeInterval = 1) -> DataStoreResult<M> {
-        let result = deleteModelSynchronous(modelType: modelType,
+    func deleteModelSynchronousOrFailOtherwise<M: Model>(
+        modelType: M.Type,
+        withId id: String,
+        where predicate: QueryPredicate? = nil,
+        timeout: TimeInterval = 1
+    ) async -> DataStoreResult<M> {
+        let result = await deleteModelSynchronous(modelType: modelType,
                                             withId: id,
                                             where: predicate,
                                             timeout: timeout)
@@ -93,23 +94,27 @@ class StorageEngineTestsBase: XCTestCase {
         }
     }
 
-    func deleteModelSynchronous<M: Model>(modelType: M.Type,
-                                          withId id: String,
-                                          where predicate: QueryPredicate? = nil,
-                                          timeout: TimeInterval = 10) -> DataStoreResult<M?> {
+    func deleteModelSynchronous<M: Model>(
+        modelType: M.Type,
+        withId id: String,
+        where predicate: QueryPredicate? = nil,
+        timeout: TimeInterval = 10
+    ) async -> DataStoreResult<M?> {
+        
         let deleteFinished = expectation(description: "Delete Finished")
+        wait(for: [deleteFinished], timeout: timeout)
         var result: DataStoreResult<M?>?
 
-        storageEngine.delete(modelType,
-                             modelSchema: modelType.schema,
-                             withId: id,
-                             condition: predicate,
-                             completion: { dResult in
-            result = dResult
-            deleteFinished.fulfill()
-        })
-
-        wait(for: [deleteFinished], timeout: timeout)
+        let deleteResult = await storageEngine.delete(
+            modelType,
+            modelSchema: modelType.schema,
+            withId: id,
+            condition: predicate
+        )
+        
+        result = deleteResult
+        deleteFinished.fulfill()
+            
         guard let deleteResult = result else {
             return .failure(causedBy: "Delete operation timed out")
         }

@@ -169,8 +169,8 @@ class MutationSyncMetadataMigrationTests: MutationSyncMetadataMigrationTestBase 
         let restaurant = Restaurant(restaurantName: "name")
         save(restaurant)
         let metadata = MutationSyncMetadata(id: restaurant.id, deleted: false, lastChangedAt: 1, version: 1)
-        saveMutationSyncMetadata(metadata)
-        guard let mutationSyncMetadatas = queryMutationSyncMetadata() else {
+        await saveMutationSyncMetadata(metadata)
+        guard let mutationSyncMetadatas = await queryMutationSyncMetadata() else {
             XCTFail("Could not get metadata")
             return
         }
@@ -183,7 +183,7 @@ class MutationSyncMetadataMigrationTests: MutationSyncMetadataMigrationTestBase 
 
         try migration.apply()
 
-        guard let mutationSyncMetadatasBackfilled = queryMutationSyncMetadata() else {
+        guard let mutationSyncMetadatasBackfilled = await queryMutationSyncMetadata() else {
             XCTFail("Could not get metadata")
             return
         }

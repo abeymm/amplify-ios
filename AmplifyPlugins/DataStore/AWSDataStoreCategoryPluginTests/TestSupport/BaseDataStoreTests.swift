@@ -81,32 +81,24 @@ class BaseDataStoreTests: XCTestCase {
 
     // MARK: - Utilities
 
-    func populateData<M: Model>(_ models: [M]) {
-        let semaphore = DispatchSemaphore(value: 0)
-
-        func save(model: M, index: Int) {
-            
-            storageAdapter.save(model) {
-                switch $0 {
-                case .success:
-                    let nextIndex = index + 1
-                    if nextIndex < models.endIndex {
-                        save(model: models[nextIndex], index: nextIndex)
-                    } else {
-                        semaphore.signal()
-                    }
-                case .failure(let error):
-                    XCTFail(error.errorDescription)
-                    semaphore.signal()
+    func populateData<M: Model>(_ models: [M]) async {
+        
+        func save(model: M, index: Int) async {
+            let result = await storageAdapter.save(model)
+            switch result {
+            case .success:
+                let nextIndex = index + 1
+                if nextIndex < models.endIndex {
+                    await save(model: models[nextIndex], index: nextIndex)
                 }
+            case .failure(let error):
+                XCTFail(error.errorDescription)
+             
             }
         }
 
         if let model = models.first {
-            save(model: model, index: 0)
-            semaphore.wait()
-        } else {
-            semaphore.signal()
+            await save(model: model, index: 0)
         }
 
     }

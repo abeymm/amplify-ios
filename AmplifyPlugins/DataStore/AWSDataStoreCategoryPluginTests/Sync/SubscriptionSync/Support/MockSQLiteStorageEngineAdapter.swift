@@ -292,7 +292,9 @@ class MockSQLiteStorageEngineAdapter: StorageEngineAdapter {
             errorToThrowOnTransaction = nil
             throw err
         }
-        try basicClosure()
+        Task {
+            try await basicClosure()
+        }
     }
 
 

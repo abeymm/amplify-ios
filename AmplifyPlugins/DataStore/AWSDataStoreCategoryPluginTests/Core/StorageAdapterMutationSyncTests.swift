@@ -19,13 +19,13 @@ class StorageAdapterMutationSyncTests: BaseDataStoreTests {
     /// - Then:
     ///   - the result should contain a list of `MutationSync`
     ///   - each `MutationSync` represents the correct pair of `Post` and `MutationSyncMetadata`
-    func testQueryMutationSync() {
+    func testQueryMutationSync() async {
         let expect = expectation(description: "it should create posts and sync metadata")
         // insert some posts
         let posts = stride(from: 0, to: 3, by: 1).map {
             Post(title: "title \($0)", content: "content \($0)", createdAt: .now())
         }
-        populateData(posts)
+        await populateData(posts)
 
         // then create sync metadata for them
         let syncMetadataList = posts.map {
@@ -35,7 +35,7 @@ class StorageAdapterMutationSyncTests: BaseDataStoreTests {
                                  lastChangedAt: Int(Date().timeIntervalSince1970),
                                  version: 1)
         }
-        populateData(syncMetadataList)
+        await populateData(syncMetadataList)
 
         do {
             let mutationSync = try storageAdapter.queryMutationSync(for: posts, modelName: Post.modelName)

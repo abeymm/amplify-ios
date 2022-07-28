@@ -26,11 +26,11 @@ class SQLiteMutationSyncMetadataMigrationDelegateTests: MutationSyncMetadataMigr
     }
 
     /// Ensure the deleted MutationSyncMetadata table is query-ably and empty after deleting all the records
-    func testDeleteMutationSyncMetadata() throws {
+    func testDeleteMutationSyncMetadata() async throws {
         try setUpAllModels()
         let metadata = MutationSyncMetadata(modelId: "1", modelName: "2", deleted: false, lastChangedAt: 1, version: 1)
         save(metadata)
-        guard let mutationSyncMetadatas = queryMutationSyncMetadata() else {
+        guard let mutationSyncMetadatas = await queryMutationSyncMetadata() else {
             XCTFail("Could not get metadata")
             return
         }
@@ -40,7 +40,7 @@ class SQLiteMutationSyncMetadataMigrationDelegateTests: MutationSyncMetadataMigr
                                                                    modelSchemas: modelSchemas)
         let sql = try delegate.emptyMutationSyncMetadataStore()
         XCTAssertEqual(sql, "delete from \"MutationSyncMetadata\" as root")
-        guard let mutationSyncMetadatas = queryMutationSyncMetadata() else {
+        guard let mutationSyncMetadatas = await queryMutationSyncMetadata() else {
             XCTFail("Could not get metadata")
             return
         }
@@ -48,11 +48,11 @@ class SQLiteMutationSyncMetadataMigrationDelegateTests: MutationSyncMetadataMigr
     }
 
     /// Ensure the deleted ModelSyncMetadata table is query-ably and empty after deleting all the records
-    func testDeleteModelSyncMetadata() throws {
+    func testDeleteModelSyncMetadata() async throws {
         try setUpAllModels()
         let metadata = ModelSyncMetadata(id: "modelName", lastSync: 1)
         save(metadata)
-        guard let modelSyncMetadatas = queryModelSyncMetadata() else {
+        guard let modelSyncMetadatas = await queryModelSyncMetadata() else {
             XCTFail("Could not get metadata")
             return
         }
@@ -62,7 +62,7 @@ class SQLiteMutationSyncMetadataMigrationDelegateTests: MutationSyncMetadataMigr
                                                                    modelSchemas: modelSchemas)
         let sql = try delegate.emptyModelSyncMetadataStore()
         XCTAssertEqual(sql, "delete from \"ModelSyncMetadata\" as root")
-        guard let modelSyncMetadatasDeleted = queryModelSyncMetadata() else {
+        guard let modelSyncMetadatasDeleted = await queryModelSyncMetadata() else {
             XCTFail("Could not get metadata")
             return
         }
@@ -71,13 +71,13 @@ class SQLiteMutationSyncMetadataMigrationDelegateTests: MutationSyncMetadataMigr
 
     // MARK: - Migration tests
 
-    func testMigrate() throws {
+    func testMigrate() async throws {
         try setUpAllModels()
         let restaurant = Restaurant(restaurantName: "name")
         save(restaurant)
         let metadata = MutationSyncMetadata(id: restaurant.id, deleted: false, lastChangedAt: 1, version: 1)
-        saveMutationSyncMetadata(metadata)
-        guard let mutationSyncMetadatas = queryMutationSyncMetadata() else {
+        await saveMutationSyncMetadata(metadata)
+        guard let mutationSyncMetadatas = await queryMutationSyncMetadata() else {
             XCTFail("Could not get metadata")
             return
         }
@@ -93,7 +93,7 @@ class SQLiteMutationSyncMetadataMigrationDelegateTests: MutationSyncMetadataMigr
         try delegate.removeMutationSyncMetadataStore()
         try delegate.renameMutationSyncMetadataCopy()
 
-        guard let mutationSyncMetadatasBackfilled = queryMutationSyncMetadata() else {
+        guard let mutationSyncMetadatasBackfilled = await queryMutationSyncMetadata() else {
             XCTFail("Could not get metadata")
             return
         }
