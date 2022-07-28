@@ -23,38 +23,38 @@ class SQLiteStorageEngineAdapterTests: BaseDataStoreTests {
     ///   - the `save(post)` is called
     /// - Then:
     ///   - call `query(Post)` to check if the model was correctly inserted
-    func testInsertPost() {
+    func testInsertPost() async {
         let expectation = self.expectation(
             description: "it should save and select a Post from the database")
 
+        wait(for: [expectation], timeout: 5)
         // insert a post
         let post = Post(title: "title", content: "content", createdAt: .now())
-        storageAdapter.save(post) { saveResult in
-            switch saveResult {
-            case .success:
-                self.storageAdapter.query(Post.self) { queryResult in
-                    switch queryResult {
-                    case .success(let posts):
-                        XCTAssert(posts.count == 1)
-                        if let savedPost = posts.first {
-                            XCTAssert(post.id == savedPost.id)
-                            XCTAssert(post.title == savedPost.title)
-                            XCTAssert(post.content == savedPost.content)
-                            XCTAssertEqual(post.createdAt.iso8601String, savedPost.createdAt.iso8601String)
-                        }
-                        expectation.fulfill()
-                    case .failure(let error):
-                        XCTFail(String(describing: error))
-                        expectation.fulfill()
-                    }
+        let saveResult = await storageAdapter.save(post)
+        switch saveResult {
+        case .success:
+            let queryResult = await self.storageAdapter.query(Post.self)
+            switch queryResult {
+            case .success(let posts):
+                XCTAssert(posts.count == 1)
+                if let savedPost = posts.first {
+                    XCTAssert(post.id == savedPost.id)
+                    XCTAssert(post.title == savedPost.title)
+                    XCTAssert(post.content == savedPost.content)
+                    XCTAssertEqual(post.createdAt.iso8601String, savedPost.createdAt.iso8601String)
                 }
+                expectation.fulfill()
             case .failure(let error):
                 XCTFail(String(describing: error))
                 expectation.fulfill()
             }
+            
+        case .failure(let error):
+            XCTFail(String(describing: error))
+            expectation.fulfill()
+            
         }
 
-        wait(for: [expectation], timeout: 5)
     }
 
     /// - Given: a list a `Post` instance
@@ -62,38 +62,36 @@ class SQLiteStorageEngineAdapterTests: BaseDataStoreTests {
     ///   - the `save(post, condition = .all)` is called
     /// - Then:
     ///   - call `query(Post)` to check if the model was correctly inserted
-    func testInsertPostWithAll() {
+    func testInsertPostWithAll() async {
         let expectation = self.expectation(
             description: "it should save and select a Post from the database")
 
         // insert a post
+        wait(for: [expectation], timeout: 5)
         let post = Post(title: "title", content: "content", createdAt: .now())
-        storageAdapter.save(post, condition: QueryPredicateConstant.all) { saveResult in
-            switch saveResult {
-            case .success:
-                self.storageAdapter.query(Post.self) { queryResult in
-                    switch queryResult {
-                    case .success(let posts):
-                        XCTAssert(posts.count == 1)
-                        if let savedPost = posts.first {
-                            XCTAssert(post.id == savedPost.id)
-                            XCTAssert(post.title == savedPost.title)
-                            XCTAssert(post.content == savedPost.content)
-                            XCTAssertEqual(post.createdAt.iso8601String, savedPost.createdAt.iso8601String)
-                        }
-                        expectation.fulfill()
-                    case .failure(let error):
-                        XCTFail(String(describing: error))
-                        expectation.fulfill()
-                    }
+        let saveResult = await storageAdapter.save(post, condition: QueryPredicateConstant.all)
+        switch saveResult {
+        case .success:
+            let queryResult = await self.storageAdapter.query(Post.self)
+            switch queryResult {
+            case .success(let posts):
+                XCTAssert(posts.count == 1)
+                if let savedPost = posts.first {
+                    XCTAssert(post.id == savedPost.id)
+                    XCTAssert(post.title == savedPost.title)
+                    XCTAssert(post.content == savedPost.content)
+                    XCTAssertEqual(post.createdAt.iso8601String, savedPost.createdAt.iso8601String)
                 }
+                expectation.fulfill()
             case .failure(let error):
                 XCTFail(String(describing: error))
                 expectation.fulfill()
             }
+            
+        case .failure(let error):
+            XCTFail(String(describing: error))
+            expectation.fulfill()
         }
-
-        wait(for: [expectation], timeout: 5)
     }
 
     /// - Given: a list a `Post` instance
@@ -102,39 +100,36 @@ class SQLiteStorageEngineAdapterTests: BaseDataStoreTests {
     /// - Then:
     ///   - call `query(Post, where: title == post.title)` to check
     ///   if the model was correctly inserted using a predicate
-    func testInsertPostAndSelectByTitle() {
+    func testInsertPostAndSelectByTitle() async {
         let expectation = self.expectation(
             description: "it should save and select a Post from the database")
 
         // insert a post
         let post = Post(title: "title", content: "content", createdAt: .now())
-        storageAdapter.save(post) { saveResult in
-            switch saveResult {
-            case .success:
-                let predicate = Post.keys.title == post.title
-                self.storageAdapter.query(Post.self, predicate: predicate) { queryResult in
-                    switch queryResult {
-                    case .success(let posts):
-                        XCTAssertEqual(posts.count, 1)
-                        if let savedPost = posts.first {
-                            XCTAssert(post.id == savedPost.id)
-                            XCTAssert(post.title == savedPost.title)
-                            XCTAssert(post.content == savedPost.content)
-                            XCTAssertEqual(post.createdAt.iso8601String, savedPost.createdAt.iso8601String)
-                        }
-                        expectation.fulfill()
-                    case .failure(let error):
-                        XCTFail(String(describing: error))
-                        expectation.fulfill()
-                    }
+        wait(for: [expectation], timeout: 5)
+        let saveResult = await storageAdapter.save(post)
+        switch saveResult {
+        case .success:
+            let predicate = Post.keys.title == post.title
+            let queryResult = await self.storageAdapter.query(Post.self, predicate: predicate)
+            switch queryResult {
+            case .success(let posts):
+                XCTAssertEqual(posts.count, 1)
+                if let savedPost = posts.first {
+                    XCTAssert(post.id == savedPost.id)
+                    XCTAssert(post.title == savedPost.title)
+                    XCTAssert(post.content == savedPost.content)
+                    XCTAssertEqual(post.createdAt.iso8601String, savedPost.createdAt.iso8601String)
                 }
+                expectation.fulfill()
             case .failure(let error):
                 XCTFail(String(describing: error))
                 expectation.fulfill()
             }
+        case .failure(let error):
+            XCTFail(String(describing: error))
+            expectation.fulfill()
         }
-
-        wait(for: [expectation], timeout: 5)
     }
 
     /// - Given: a list a `Post` instance
@@ -144,47 +139,44 @@ class SQLiteStorageEngineAdapterTests: BaseDataStoreTests {
     ///   - call `save(post)` again with an updated title
     ///   - check if the `query(Post)` returns only 1 post
     ///   - the post has the updated title
-    func testInsertPostAndThenUpdateIt() {
+    func testInsertPostAndThenUpdateIt() async {
         let expectation = self.expectation(
             description: "it should insert and update a Post")
 
-        func checkSavedPost(id: String) {
-            storageAdapter.query(Post.self) {
-                switch $0 {
-                case .success(let posts):
-                    XCTAssertEqual(posts.count, 1)
-                    if let post = posts.first {
-                        XCTAssertEqual(post.id, id)
-                        XCTAssertEqual(post.title, "title updated")
-                    }
-                    expectation.fulfill()
-                case .failure(let error):
-                    XCTFail(String(describing: error))
-                    expectation.fulfill()
+        func checkSavedPost(id: String) async {
+            let result = await storageAdapter.query(Post.self)
+            switch result {
+            case .success(let posts):
+                XCTAssertEqual(posts.count, 1)
+                if let post = posts.first {
+                    XCTAssertEqual(post.id, id)
+                    XCTAssertEqual(post.title, "title updated")
                 }
-            }
-        }
-
-        var post = Post(title: "title", content: "content", createdAt: .now())
-        storageAdapter.save(post) { insertResult in
-            switch insertResult {
-            case .success:
-                post.title = "title updated"
-                self.storageAdapter.save(post) { updateResult in
-                    switch updateResult {
-                    case .success:
-                        checkSavedPost(id: post.id)
-                    case .failure(let error):
-                        XCTFail(error.errorDescription)
-                    }
-                }
+                expectation.fulfill()
             case .failure(let error):
                 XCTFail(String(describing: error))
                 expectation.fulfill()
             }
         }
 
+        var post = Post(title: "title", content: "content", createdAt: .now())
         wait(for: [expectation], timeout: 5)
+        let insertResult = await storageAdapter.save(post)
+        switch insertResult {
+        case .success:
+            post.title = "title updated"
+            let updateResult = await self.storageAdapter.save(post)
+            switch updateResult {
+            case .success:
+                await checkSavedPost(id: post.id)
+            case .failure(let error):
+                XCTFail(error.errorDescription)
+            }
+            
+        case .failure(let error):
+            XCTFail(String(describing: error))
+            expectation.fulfill()
+        }
     }
 
     /// - Given: A Post instance
@@ -194,47 +186,44 @@ class SQLiteStorageEngineAdapterTests: BaseDataStoreTests {
     ///    - call `update(post, condition)` with `post.title` updated and condition matches `post.content`
     ///    - a successful update for `update(post, condition)`
     ///    - call `query(Post)` to check if the model was correctly updated
-    func testInsertPostAndThenUpdateItWithCondition() {
+    func testInsertPostAndThenUpdateItWithCondition() async {
         let expectation = self.expectation(
             description: "it should insert and update a Post")
 
-        func checkSavedPost(id: String) {
-            storageAdapter.query(Post.self) {
-                switch $0 {
-                case .success(let posts):
-                    XCTAssertEqual(posts.count, 1)
-                    if let post = posts.first {
-                        XCTAssertEqual(post.id, id)
-                        XCTAssertEqual(post.title, "title updated")
-                    }
-                    expectation.fulfill()
-                case .failure(let error):
-                    XCTFail(String(describing: error))
-                    expectation.fulfill()
+        func checkSavedPost(id: String) async {
+            let result = await storageAdapter.query(Post.self)
+            switch result {
+            case .success(let posts):
+                XCTAssertEqual(posts.count, 1)
+                if let post = posts.first {
+                    XCTAssertEqual(post.id, id)
+                    XCTAssertEqual(post.title, "title updated")
                 }
+                expectation.fulfill()
+            case .failure(let error):
+                XCTFail(String(describing: error))
+                expectation.fulfill()
             }
         }
 
         var post = Post(title: "title", content: "content", createdAt: .now())
-        storageAdapter.save(post) { insertResult in
-            switch insertResult {
-            case .success:
-                post.title = "title updated"
-                let condition = Post.keys.content == post.content
-                self.storageAdapter.save(post, condition: condition) { updateResult in
-                    switch updateResult {
-                    case .success:
-                        checkSavedPost(id: post.id)
-                    case .failure(let error):
-                        XCTFail(error.errorDescription)
-                    }
-                }
-            case .failure(let error):
-                XCTFail(String(describing: error))
-            }
-        }
-
         wait(for: [expectation], timeout: 5)
+        let insertResult = await storageAdapter.save(post)
+        switch insertResult {
+        case .success:
+            post.title = "title updated"
+            let condition = Post.keys.content == post.content
+            let updateResult = await self.storageAdapter.save(post, condition: condition)
+            switch updateResult {
+            case .success:
+                await checkSavedPost(id: post.id)
+            case .failure(let error):
+                XCTFail(error.errorDescription)
+            }
+            
+        case .failure(let error):
+            XCTFail(String(describing: error))
+        }
     }
 
     /// - Given: A Post instance
@@ -244,46 +233,44 @@ class SQLiteStorageEngineAdapterTests: BaseDataStoreTests {
     ///    - call `update(post, condition = .all)` with `post.title` updated and condition `.all`
     ///    - a successful update for `update(post, condition)`
     ///    - call `query(Post)` to check if the model was correctly updated
-    func testInsertPostAndThenUpdateItWithConditionAll() {
+    func testInsertPostAndThenUpdateItWithConditionAll() async {
         let expectation = self.expectation(
             description: "it should insert and update a Post")
 
-        func checkSavedPost(id: String) {
-            storageAdapter.query(Post.self) {
-                switch $0 {
-                case .success(let posts):
-                    XCTAssertEqual(posts.count, 1)
-                    if let post = posts.first {
-                        XCTAssertEqual(post.id, id)
-                        XCTAssertEqual(post.title, "title updated")
-                    }
-                    expectation.fulfill()
-                case .failure(let error):
-                    XCTFail(String(describing: error))
-                    expectation.fulfill()
+        func checkSavedPost(id: String) async {
+            let result = await storageAdapter.query(Post.self)
+            switch result {
+            case .success(let posts):
+                XCTAssertEqual(posts.count, 1)
+                if let post = posts.first {
+                    XCTAssertEqual(post.id, id)
+                    XCTAssertEqual(post.title, "title updated")
                 }
-            }
-        }
-
-        var post = Post(title: "title", content: "content", createdAt: .now())
-        storageAdapter.save(post) { insertResult in
-            switch insertResult {
-            case .success:
-                post.title = "title updated"
-                self.storageAdapter.save(post, condition: QueryPredicateConstant.all) { updateResult in
-                    switch updateResult {
-                    case .success:
-                        checkSavedPost(id: post.id)
-                    case .failure(let error):
-                        XCTFail(error.errorDescription)
-                    }
-                }
+                expectation.fulfill()
             case .failure(let error):
                 XCTFail(String(describing: error))
+                expectation.fulfill()
             }
+            
         }
 
         wait(for: [expectation], timeout: 5)
+        var post = Post(title: "title", content: "content", createdAt: .now())
+        let insertResult = await storageAdapter.save(post)
+        switch insertResult {
+        case .success:
+            post.title = "title updated"
+            let updateResult = await self.storageAdapter.save(post, condition: QueryPredicateConstant.all)
+            switch updateResult {
+            case .success:
+                await checkSavedPost(id: post.id)
+            case .failure(let error):
+                XCTFail(error.errorDescription)
+            }
+            
+        case .failure(let error):
+            XCTFail(String(describing: error))
+        }
     }
 
     /// - Given: A Post instance
@@ -291,27 +278,24 @@ class SQLiteStorageEngineAdapterTests: BaseDataStoreTests {
     ///    - The `save(post, condition)` is called, condition is passed in.
     /// - Then:
     ///    - Fails with conditional save failed error when there is no existing model instance
-    func testUpdateWithConditionFailsWhenNoExistingModel() {
+    func testUpdateWithConditionFailsWhenNoExistingModel() async {
         let expectation = self.expectation(
             description: "it should fail to update the Post that does not exist")
 
+        wait(for: [expectation], timeout: 5)
         let post = Post(title: "title", content: "content", createdAt: .now())
         let condition = Post.keys.content == "content"
-        storageAdapter.save(post, condition: condition) { insertResult in
-            switch insertResult {
-            case .success:
-                XCTFail("Update should not be successful")
-            case .failure(let error):
-                guard case .invalidCondition = error else {
-                    XCTFail("Did not match invalid condition error")
-                    return
-                }
-
-                expectation.fulfill()
+        let insertResult = await storageAdapter.save(post, condition: condition)
+        switch insertResult {
+        case .success:
+            XCTFail("Update should not be successful")
+        case .failure(let error):
+            guard case .invalidCondition = error else {
+                XCTFail("Did not match invalid condition error")
+                return
             }
+            expectation.fulfill()
         }
-
-        wait(for: [expectation], timeout: 5)
     }
 
     /// - Given: A Post instance
@@ -320,35 +304,33 @@ class SQLiteStorageEngineAdapterTests: BaseDataStoreTests {
     /// - Then:
     ///    - call `update(post, condition)` with `post.title` updated and condition does not match
     ///    - the update for `update(post, condition)` fails with conditional save failed error
-    func testInsertPostAndThenUpdateItWithConditionDoesNotMatchShouldReturnError() {
+    func testInsertPostAndThenUpdateItWithConditionDoesNotMatchShouldReturnError() async {
         let expectation = self.expectation(
             description: "it should insert and then fail to update the Post, given bad condition")
+        wait(for: [expectation], timeout: 5)
 
         var post = Post(title: "title not updated", content: "content", createdAt: .now())
-        storageAdapter.save(post) { insertResult in
-            switch insertResult {
+        let insertResult = await storageAdapter.save(post)
+        switch insertResult {
+        case .success:
+            post.title = "title updated"
+            let condition = Post.keys.content == "content 2 does not match previous content"
+            let updateResult = await self.storageAdapter.save(post, condition: condition)
+            switch updateResult {
             case .success:
-                post.title = "title updated"
-                let condition = Post.keys.content == "content 2 does not match previous content"
-                self.storageAdapter.save(post, condition: condition) { updateResult in
-                    switch updateResult {
-                    case .success:
-                        XCTFail("Update should not be successful")
-                    case .failure(let error):
-                        guard case .invalidCondition = error else {
-                            XCTFail("Did not match invalid conditiion")
-                            return
-                        }
-
-                        expectation.fulfill()
-                    }
-                }
+                XCTFail("Update should not be successful")
             case .failure(let error):
-                XCTFail(String(describing: error))
+                guard case .invalidCondition = error else {
+                    XCTFail("Did not match invalid conditiion")
+                    return
+                }
+                
+                expectation.fulfill()
             }
+            
+        case .failure(let error):
+            XCTFail(String(describing: error))
         }
-
-        wait(for: [expectation], timeout: 5)
     }
 
     /// - Given: a list a `Post` instance
@@ -357,137 +339,134 @@ class SQLiteStorageEngineAdapterTests: BaseDataStoreTests {
     /// - Then:
     ///   - call `delete(Post, id)` and check if `query(Post)` is empty
     ///   - check if `storageAdapter.exists(Post, id)` returns `false`
-    func testInsertPostAndThenDeleteIt() {
+    func testInsertPostAndThenDeleteIt() async {
         let saveExpectation = expectation(description: "Saved")
         let deleteExpectation = expectation(description: "Deleted")
         let queryExpectation = expectation(description: "Queried")
 
         let post = Post(title: "title", content: "content", createdAt: .now())
-        storageAdapter.save(post) { insertResult in
+        let insertResult = await storageAdapter.save(post)
             switch insertResult {
             case .success:
                 saveExpectation.fulfill()
-                self.storageAdapter.delete(Post.self, modelSchema: Post.schema, withId: post.id) {
-                    switch $0 {
-                    case .success:
-                        deleteExpectation.fulfill()
-                        self.checkIfPostIsDeleted(id: post.id)
-                        queryExpectation.fulfill()
-                    case .failure(let error):
-                        XCTFail(error.errorDescription)
-                    }
+                let deleteResult = await self.storageAdapter.delete(Post.self, modelSchema: Post.schema, withId: post.id)
+                switch deleteResult {
+                case .success:
+                    deleteExpectation.fulfill()
+                    self.checkIfPostIsDeleted(id: post.id)
+                    queryExpectation.fulfill()
+                case .failure(let error):
+                    XCTFail(error.errorDescription)
                 }
             case .failure(let error):
                 XCTFail(String(describing: error))
             }
-        }
+        
 
         wait(for: [saveExpectation, deleteExpectation, queryExpectation], timeout: 2)
     }
 
-    func testInsertPostAndThenDeleteByIdWithPredicate() {
+    func testInsertPostAndThenDeleteByIdWithPredicate() async {
         let dateTestStart = Temporal.DateTime.now()
         let dateInFuture = dateTestStart + .seconds(10)
         let saveExpectation = expectation(description: "Saved")
         let deleteExpectation = expectation(description: "Deleted")
         let queryExpectation = expectation(description: "Queried")
+        wait(for: [saveExpectation, deleteExpectation, queryExpectation], timeout: 2)
 
         let post = Post(title: "title1", content: "content1", createdAt: dateInFuture)
-        storageAdapter.save(post) { insertResult in
-            switch insertResult {
+        let insertResult = await storageAdapter.save(post)
+        switch insertResult {
+        case .success:
+            saveExpectation.fulfill()
+            let postKeys = Post.keys
+            let predicate = postKeys.createdAt.gt(dateTestStart)
+            let deleteResult = await self.storageAdapter.delete(
+                Post.self,
+                modelSchema: Post.schema,
+                withId: post.id,
+                condition: predicate
+            )
+            switch deleteResult {
             case .success:
-                saveExpectation.fulfill()
-                let postKeys = Post.keys
-                let predicate = postKeys.createdAt.gt(dateTestStart)
-                self.storageAdapter.delete(Post.self,
-                                           modelSchema: Post.schema,
-                                           withId: post.id,
-                                           condition: predicate) { result in
-                    switch result {
-                    case .success:
-                        deleteExpectation.fulfill()
-                        self.checkIfPostIsDeleted(id: post.id)
-                        queryExpectation.fulfill()
-                    case .failure(let error):
-                        XCTFail(error.errorDescription)
-                    }
-                }
+                deleteExpectation.fulfill()
+                self.checkIfPostIsDeleted(id: post.id)
+                queryExpectation.fulfill()
             case .failure(let error):
-                XCTFail(String(describing: error))
+                XCTFail(error.errorDescription)
             }
+            
+        case .failure(let error):
+            XCTFail(String(describing: error))
         }
-
-        wait(for: [saveExpectation, deleteExpectation, queryExpectation], timeout: 2)
     }
 
-    func testInsertPostAndThenDeleteByIdWithPredicateThatDoesNotMatch() {
+    func testInsertPostAndThenDeleteByIdWithPredicateThatDoesNotMatch() async {
         let dateTestStart = Temporal.DateTime.now()
         let dateInFuture = dateTestStart + .seconds(10)
         let saveExpectation = expectation(description: "Saved")
         let deleteCompleteExpectation = expectation(description: "Delete completed")
         let queryExpectation = expectation(description: "Queried")
-
-        let post = Post(title: "title1", content: "content1", createdAt: dateInFuture)
-        storageAdapter.save(post) { insertResult in
-            switch insertResult {
-            case .success:
-                saveExpectation.fulfill()
-                let postKeys = Post.keys
-                let predicate = postKeys.createdAt.lt(dateTestStart)
-                self.storageAdapter.delete(Post.self,
-                                           modelSchema: Post.schema,
-                                           withId: post.id,
-                                           condition: predicate) { result in
-                    switch result {
-                    case .success:
-                        deleteCompleteExpectation.fulfill()
-                        self.checkIfPostExists(id: post.id)
-                        queryExpectation.fulfill()
-                    case .failure(let error):
-                        XCTFail(error.errorDescription)
-                    }
-                }
-            case .failure(let error):
-                XCTFail(String(describing: error))
-            }
-        }
-
         wait(for: [saveExpectation, deleteCompleteExpectation, queryExpectation], timeout: 2)
+        
+        let post = Post(title: "title1", content: "content1", createdAt: dateInFuture)
+        let insertResult = await storageAdapter.save(post)
+        switch insertResult {
+        case .success:
+            saveExpectation.fulfill()
+            let postKeys = Post.keys
+            let predicate = postKeys.createdAt.lt(dateTestStart)
+            let deleteResult = await self.storageAdapter.delete(
+                Post.self,
+                modelSchema: Post.schema,
+                withId: post.id,
+                condition: predicate
+            )
+            switch deleteResult {
+            case .success:
+                deleteCompleteExpectation.fulfill()
+                self.checkIfPostExists(id: post.id)
+                queryExpectation.fulfill()
+            case .failure(let error):
+                XCTFail(error.errorDescription)
+            }
+            
+        case .failure(let error):
+            XCTFail(String(describing: error))
+        }
     }
 
-    func testInsertSinglePostThenDeleteItByPredicate() {
+    func testInsertSinglePostThenDeleteItByPredicate() async {
         let dateTestStart = Temporal.DateTime.now()
         let dateInFuture = dateTestStart + .seconds(10)
         let saveExpectation = expectation(description: "Saved")
         let deleteExpectation = expectation(description: "Deleted")
         let queryExpectation = expectation(description: "Queried")
+        wait(for: [saveExpectation, deleteExpectation, queryExpectation], timeout: 2)
 
         let post = Post(title: "title1", content: "content1", createdAt: dateInFuture)
-        storageAdapter.save(post) { insertResult in
-            switch insertResult {
+        let insertResult = await storageAdapter.save(post)
+        switch insertResult {
+        case .success:
+            saveExpectation.fulfill()
+            let postKeys = Post.keys
+            let predicate = postKeys.createdAt.gt(dateTestStart)
+            let deleteResult = await self.storageAdapter.delete(Post.self, modelSchema: Post.schema, filter: predicate)
+            switch deleteResult {
             case .success:
-                saveExpectation.fulfill()
-                let postKeys = Post.keys
-                let predicate = postKeys.createdAt.gt(dateTestStart)
-                self.storageAdapter.delete(Post.self, modelSchema: Post.schema, filter: predicate) { result in
-                    switch result {
-                    case .success:
-                        deleteExpectation.fulfill()
-                        self.checkIfPostIsDeleted(id: post.id)
-                        queryExpectation.fulfill()
-                    case .failure(let error):
-                        XCTFail(error.errorDescription)
-                    }
-                }
+                deleteExpectation.fulfill()
+                self.checkIfPostIsDeleted(id: post.id)
+                queryExpectation.fulfill()
             case .failure(let error):
-                XCTFail(String(describing: error))
+                XCTFail(error.errorDescription)
             }
+            
+        case .failure(let error):
+            XCTFail(String(describing: error))
         }
-
-        wait(for: [saveExpectation, deleteExpectation, queryExpectation], timeout: 2)
     }
 
-    func testInsertionOfManyItemsThenDeleteAllByPredicateConstant() {
+    func testInsertionOfManyItemsThenDeleteAllByPredicateConstant() async {
         let saveExpectation = expectation(description: "Saved 10 items")
         let deleteExpectation = expectation(description: "Deleted 10 items")
         let queryExpectation = expectation(description: "Queried 10 items")
@@ -502,31 +481,33 @@ class SQLiteStorageEngineAdapterTests: BaseDataStoreTests {
             let content = "\(contentX)\(counter)"
 
             let post = Post(title: title, content: content, createdAt: .now())
-            storageAdapter.save(post) { insertResult in
+            let insertResult = await storageAdapter.save(post)
                 switch insertResult {
                 case .success:
                     postsAdded.append(post.id)
                     if counter == maxCount - 1 {
                         saveExpectation.fulfill()
-                        self.storageAdapter.delete(Post.self,
-                                                   modelSchema: Post.schema,
-                                                   filter: QueryPredicateConstant.all) { result in
-                            switch result {
-                            case .success:
-                                deleteExpectation.fulfill()
-                                for postId in postsAdded {
-                                    self.checkIfPostIsDeleted(id: postId)
-                                }
-                                queryExpectation.fulfill()
-                            case .failure(let error):
-                                XCTFail(error.errorDescription)
+                        let deleteResult = await self.storageAdapter.delete(
+                            Post.self,
+                            modelSchema: Post.schema,
+                            filter: QueryPredicateConstant.all
+                        )
+                        switch deleteResult {
+                        case .success:
+                            deleteExpectation.fulfill()
+                            for postId in postsAdded {
+                                self.checkIfPostIsDeleted(id: postId)
                             }
+                            queryExpectation.fulfill()
+                        case .failure(let error):
+                            XCTFail(error.errorDescription)
                         }
                     }
+                    
                 case .failure(let error):
                     XCTFail(String(describing: error))
                 }
-            }
+            
             counter += 1
         }
         wait(for: [saveExpectation, deleteExpectation, queryExpectation], timeout: 5)
@@ -667,33 +648,35 @@ class SQLiteStorageEngineAdapterTests: BaseDataStoreTests {
         }
     }
 
-    func testQueryMutationSyncMetadata() {
+    func testQueryMutationSyncMetadata() async {
         let querySuccess = expectation(description: "query for metadata success")
         let modelId = UUID().uuidString
         let modelName = "modelName"
-        let metadata = MutationSyncMetadata(modelId: modelId,
-                                            modelName: modelName,
-                                            deleted: false,
-                                            lastChangedAt: Int(Date().timeIntervalSince1970),
-                                            version: 1)
+        let metadata = MutationSyncMetadata(
+            modelId: modelId,
+            modelName: modelName,
+            deleted: false,
+            lastChangedAt: Int(Date().timeIntervalSince1970),
+            version: 1
+        )
 
-        storageAdapter.save(metadata) { result in
-            switch result {
-            case .success:
-                do {
-                    let result = try self.storageAdapter.queryMutationSyncMetadata(for: modelId, modelName: modelName)
-                    XCTAssertEqual(result?.id, metadata.id)
-                    querySuccess.fulfill()
-                } catch {
-                    XCTFail("\(error)")
-                }
-            case .failure(let error): XCTFail("\(error)")
-            }
-        }
         wait(for: [querySuccess], timeout: 1)
+        let result = await storageAdapter.save(metadata)
+        switch result {
+        case .success:
+            do {
+                let result = try self.storageAdapter.queryMutationSyncMetadata(for: modelId, modelName: modelName)
+                XCTAssertEqual(result?.id, metadata.id)
+                querySuccess.fulfill()
+            } catch {
+                XCTFail("\(error)")
+            }
+        case .failure(let error): XCTFail("\(error)")
+        }
+        
     }
 
-    func testQueryMutationSyncMetadataForModelIds() {
+    func testQueryMutationSyncMetadataForModelIds() async {
         let modelName = "modelName"
         let metadata1 = MutationSyncMetadata(modelId: UUID().uuidString,
                                              modelName: modelName,
@@ -707,24 +690,24 @@ class SQLiteStorageEngineAdapterTests: BaseDataStoreTests {
                                              version: 1)
 
         let saveMetadata1 = expectation(description: "save metadata1 success")
-        storageAdapter.save(metadata1) { result in
-            guard case .success = result else {
-                XCTFail("Failed to save metadata")
-                return
-            }
-            saveMetadata1.fulfill()
-        }
         wait(for: [saveMetadata1], timeout: 1)
-
-        let saveMetadata2 = expectation(description: "save metadata2 success")
-        storageAdapter.save(metadata2) { result in
-            guard case .success = result else {
-                XCTFail("Failed to save metadata")
-                return
-            }
-            saveMetadata2.fulfill()
+        let result = await storageAdapter.save(metadata1)
+        guard case .success = result else {
+            XCTFail("Failed to save metadata")
+            return
         }
+        saveMetadata1.fulfill()
+        
+        
+        let saveMetadata2 = expectation(description: "save metadata2 success")
         wait(for: [saveMetadata2], timeout: 1)
+        let result2 = await storageAdapter.save(metadata2)
+        guard case .success = result2 else {
+            XCTFail("Failed to save metadata")
+            return
+        }
+        saveMetadata2.fulfill()
+        
 
         let querySuccess = expectation(description: "query for metadata success")
         var modelIds = [metadata1.modelId]
@@ -762,71 +745,69 @@ class SQLiteStorageEngineAdapterTests: BaseDataStoreTests {
 
 // MARK: Reserved words tests
 extension SQLiteStorageEngineAdapterTests {
-    func testSaveWithReservedWords() {
+    func testSaveWithReservedWords() async {
         // "Transaction"
         let transactionSaved = expectation(description: "Transaction model saved")
-        storageAdapter.save(Transaction()) { result in
-            guard case .success = result else {
-                XCTFail("Failed to save transaction")
-                return
-            }
-            transactionSaved.fulfill()
+        let result = await storageAdapter.save(Transaction())
+        guard case .success = result else {
+            XCTFail("Failed to save transaction")
+            return
         }
-
+        transactionSaved.fulfill()
+        
+        
         // "Group"
         let groupSaved = expectation(description: "Group model saved")
         let group = Group()
-        storageAdapter.save(group) { result in
-            guard case .success = result else {
-                XCTFail("Failed to save group")
-                return
-            }
-            groupSaved.fulfill()
+        let result2 = await storageAdapter.save(group)
+        guard case .success = result2 else {
+            XCTFail("Failed to save group")
+            return
         }
-
+        groupSaved.fulfill()
+        
+        
         // "Row"
         let rowSaved = expectation(description: "Row model saved")
-        storageAdapter.save(Row(group: group)) { result in
-            guard case .success = result else {
-                XCTFail("Failed to save Row")
-                return
-            }
-            rowSaved.fulfill()
-        }
-
         wait(for: [transactionSaved, groupSaved, rowSaved], timeout: 1)
+        let result3 = await storageAdapter.save(Row(group: group))
+        guard case .success = result3 else {
+            XCTFail("Failed to save Row")
+            return
+        }
+        rowSaved.fulfill()
     }
 
-    func testQueryWithReservedWords() {
+    func testQueryWithReservedWords() async {
         // "Transaction"
         let transactionQueried = expectation(description: "Transaction model queried")
-        storageAdapter.query(Transaction.self) { result in
+        let result = await storageAdapter.query(Transaction.self)
             guard case .success = result else {
                 XCTFail("Failed to query Transaction")
                 return
             }
             transactionQueried.fulfill()
-        }
+        
 
         // "Group"
         let groupQueried = expectation(description: "Group model queried")
-        storageAdapter.query(Group.self) { result in
-            guard case .success = result else {
+        let result2 = await storageAdapter.query(Group.self)
+            guard case .success = result2 else {
                 XCTFail("Failed to query Group")
                 return
             }
             groupQueried.fulfill()
-        }
+        
 
         // "Row"
         let rowQueried = expectation(description: "Row model queried")
-        storageAdapter.query(Row.self) { result in
-            guard case .success = result else {
+        wait(for: [transactionQueried, groupQueried, rowQueried], timeout: 1)
+        let result3 = await storageAdapter.query(Row.self)
+            guard case .success = result3 else {
                 XCTFail("Failed to query Row")
                 return
             }
             rowQueried.fulfill()
-        }
-        wait(for: [transactionQueried, groupQueried, rowQueried], timeout: 1)
+        
     }
 }

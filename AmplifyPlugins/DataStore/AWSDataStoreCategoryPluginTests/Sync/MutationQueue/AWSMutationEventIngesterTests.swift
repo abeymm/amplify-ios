@@ -70,44 +70,36 @@ class AWSMutationEventIngesterTests: XCTestCase {
     ///    - I invoke DataStore.save()
     /// - Then:
     ///    - The mutation queue writes events
-    func testMutationQueueWritesSaveEvents() {
+    func testMutationQueueWritesSaveEvents() async {
         let post = Post(title: "Post title",
                         content: "Post content",
                         createdAt: .now())
 
         let saveCompleted = expectation(description: "Local save completed")
-        Amplify.DataStore.save(post) { result in
-            defer {
-                saveCompleted.fulfill()
-            }
-            if case .failure(let dataStoreError) = result {
-                XCTFail(String(describing: dataStoreError))
-                return
-            }
-        }
-
         wait(for: [saveCompleted], timeout: 1.0)
+        let result = await Amplify.DataStore.save(post)
+        if case .failure(let dataStoreError) = result {
+            XCTFail(String(describing: dataStoreError))
+            return
+        }
+        saveCompleted.fulfill()
 
         let mutationEventQueryCompleted = expectation(description: "Mutation event query completed")
-        storageAdapter.query(MutationEvent.self) { result in
-            defer {
-                mutationEventQueryCompleted.fulfill()
-            }
-
-            let mutationEvents: [MutationEvent]
-            switch result {
-            case .failure(let dataStoreError):
-                XCTFail(String(describing: dataStoreError))
-                return
-            case .success(let eventsFromResult):
-                mutationEvents = eventsFromResult
-            }
-
-            XCTAssert(!mutationEvents.isEmpty)
-            XCTAssert(mutationEvents.first?.json.contains(post.id) ?? false)
-        }
-
         wait(for: [mutationEventQueryCompleted], timeout: 1.0)
+        let r2 = await storageAdapter.query(MutationEvent.self)
+        let mutationEvents: [MutationEvent]
+        switch r2 {
+        case .failure(let dataStoreError):
+            XCTFail(String(describing: dataStoreError))
+            return
+        case .success(let eventsFromResult):
+            mutationEvents = eventsFromResult
+        }
+        
+        XCTAssert(!mutationEvents.isEmpty)
+        XCTAssert(mutationEvents.first?.json.contains(post.id) ?? false)
+        mutationEventQueryCompleted.fulfill()
+
 
     }
 

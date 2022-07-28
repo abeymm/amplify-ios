@@ -48,41 +48,43 @@ class StorageEngineTestsOptionalAssociation: StorageEngineTestsBase {
         }
     }
 
-    func testSaveCommentThenQuery() {
+    func testSaveCommentThenQuery() async {
         let comment = Comment8(content: "content")
         guard case .success = saveModelSynchronous(model: comment) else {
             XCTFail("Failed to save comment")
             return
         }
 
-        guard case let .success(queriedComment) =
-            querySingleModelSynchronous(modelType: Comment8.self,
-                                        predicate: Comment8.keys.id == comment.id) else {
-                XCTFail("Failed to query post")
-                return
+        guard case let .success(queriedComment) = await querySingleModelSynchronous(
+            modelType: Comment8.self,
+            predicate: Comment8.keys.id == comment.id
+        ) else {
+            XCTFail("Failed to query post")
+            return
         }
         XCTAssertEqual(queriedComment.id, comment.id)
         XCTAssertNil(queriedComment.post)
     }
 
-    func testSavePostThenQuery() {
+    func testSavePostThenQuery() async {
         let post = Post8(name: "name", randomId: "random", blog: nil)
         guard case .success = saveModelSynchronous(model: post) else {
             XCTFail("Failed to save post")
             return
         }
 
-        guard case let .success(queriedPost) =
-            querySingleModelSynchronous(modelType: Post8.self,
-                                        predicate: Post8.keys.id == post.id) else {
-                XCTFail("Failed to query post")
-                return
+        guard case let .success(queriedPost) = await querySingleModelSynchronous(
+            modelType: Post8.self,
+            predicate: Post8.keys.id == post.id
+        ) else {
+            XCTFail("Failed to query post")
+            return
         }
         XCTAssertEqual(queriedPost.id, post.id)
         XCTAssertNil(queriedPost.blog)
     }
 
-    func testSaveBlogThenQuery() {
+    func testSaveBlogThenQuery() async {
         let nestedModel = MyNestedModel8(id: UUID().uuidString, nestedName: "nestedName", notes: ["notes1", "notes2"])
         let customModel = MyCustomModel8(id: UUID().uuidString, name: "name", desc: "desc", children: [nestedModel])
         let blog = Blog8(name: "name", customs: [customModel], notes: ["notes1", "notes2"])
@@ -91,18 +93,19 @@ class StorageEngineTestsOptionalAssociation: StorageEngineTestsBase {
             return
         }
 
-        guard case let .success(queriedBlog) =
-            querySingleModelSynchronous(modelType: Blog8.self,
-                                        predicate: Blog8.keys.id == blog.id) else {
-                XCTFail("Failed to query blog")
-                return
+        guard case let .success(queriedBlog) = await querySingleModelSynchronous(
+            modelType: Blog8.self,
+            predicate: Blog8.keys.id == blog.id
+        ) else {
+            XCTFail("Failed to query blog")
+            return
         }
         XCTAssertEqual(queriedBlog.id, blog.id)
         XCTAssertEqual(queriedBlog.customs![0]?.id, customModel.id)
         XCTAssertEqual(queriedBlog.customs![0]?.children![0]?.id, nestedModel.id)
     }
 
-    func testUpdateCommentWithPostThenQuery() {
+    func testUpdateCommentWithPostThenQuery() async {
         var comment = Comment8(content: "content")
         guard case .success = saveModelSynchronous(model: comment) else {
             XCTFail("Failed to save comment")
@@ -118,17 +121,18 @@ class StorageEngineTestsOptionalAssociation: StorageEngineTestsBase {
             XCTFail("Failed to save comment")
             return
         }
-        guard case let .success(queriedComment) =
-            querySingleModelSynchronous(modelType: Comment8.self,
-                                        predicate: Comment8.keys.id == comment.id) else {
-                XCTFail("Failed to query post")
-                return
+        guard case let .success(queriedComment) = await querySingleModelSynchronous(
+            modelType: Comment8.self,
+            predicate: Comment8.keys.id == comment.id
+        ) else {
+            XCTFail("Failed to query post")
+            return
         }
         XCTAssertEqual(queriedComment.id, comment.id)
         XCTAssertEqual(queriedComment.post?.id, post.id)
     }
 
-    func testUpdatePostWithBlogThenQueryAndLazyLoad() {
+    func testUpdatePostWithBlogThenQueryAndLazyLoad() async {
         var post = Post8(name: "name", randomId: "random", blog: nil)
         guard case .success = saveModelSynchronous(model: post) else {
             XCTFail("Failed to save post")
@@ -147,11 +151,12 @@ class StorageEngineTestsOptionalAssociation: StorageEngineTestsBase {
             return
         }
 
-        guard case let .success(updatedPost) =
-            querySingleModelSynchronous(modelType: Post8.self,
-                                        predicate: Post8.keys.id == post.id) else {
-                XCTFail("Failed to query post")
-                return
+        guard case let .success(updatedPost) = await querySingleModelSynchronous(
+            modelType: Post8.self,
+            predicate: Post8.keys.id == post.id
+        ) else {
+            XCTFail("Failed to query post")
+            return
         }
         XCTAssertEqual(updatedPost.id, post.id)
         XCTAssertNotNil(updatedPost.blog)
@@ -160,7 +165,7 @@ class StorageEngineTestsOptionalAssociation: StorageEngineTestsBase {
         XCTAssertEqual(updatedPost.blog?.customs![0]?.children![0]?.id, nestedModel.id)
     }
 
-    func testUpdateCommentWithPostAndBlog() {
+    func testUpdateCommentWithPostAndBlog() async {
         let nestedModel = MyNestedModel8(id: UUID().uuidString, nestedName: "nestedName", notes: ["notes1", "notes2"])
         let customModel = MyCustomModel8(id: UUID().uuidString, name: "name", desc: "desc", children: [nestedModel])
         let blog = Blog8(name: "name", customs: [customModel], notes: ["notes1", "notes2"])
@@ -179,18 +184,19 @@ class StorageEngineTestsOptionalAssociation: StorageEngineTestsBase {
             return
         }
 
-        guard case let .success(queriedComment) =
-            querySingleModelSynchronous(modelType: Comment8.self,
-                                        predicate: Comment8.keys.id == comment.id) else {
-                XCTFail("Failed to query comment")
-                return
+        guard case let .success(queriedComment) = await querySingleModelSynchronous(
+            modelType: Comment8.self,
+            predicate: Comment8.keys.id == comment.id
+        ) else {
+            XCTFail("Failed to query comment")
+            return
         }
         XCTAssertEqual(queriedComment.id, comment.id)
         XCTAssertEqual(queriedComment.post?.id, post.id)
         XCTAssertEqual(queriedComment.post?.blog?.id, blog.id)
     }
 
-    func testRemovePostFromCommentAndBlogFromPost() {
+    func testRemovePostFromCommentAndBlogFromPost() async {
         let nestedModel = MyNestedModel8(id: UUID().uuidString, nestedName: "nestedName", notes: ["notes1", "notes2"])
         let customModel = MyCustomModel8(id: UUID().uuidString, name: "name", desc: "desc", children: [nestedModel])
         let blog = Blog8(name: "name", customs: [customModel], notes: ["notes1", "notes2"])
@@ -202,11 +208,12 @@ class StorageEngineTestsOptionalAssociation: StorageEngineTestsBase {
             XCTFail("Failed to save blog, post, comment")
             return
         }
-        guard case let .success(queriedComment) =
-            querySingleModelSynchronous(modelType: Comment8.self,
-                                        predicate: Comment8.keys.id == comment.id) else {
-                XCTFail("Failed to query comment")
-                return
+        guard case let .success(queriedComment) = await querySingleModelSynchronous(
+            modelType: Comment8.self,
+            predicate: Comment8.keys.id == comment.id
+        ) else {
+            XCTFail("Failed to query comment")
+            return
         }
         XCTAssertEqual(queriedComment.id, comment.id)
         XCTAssertEqual(queriedComment.post?.id, post.id)
@@ -216,11 +223,12 @@ class StorageEngineTestsOptionalAssociation: StorageEngineTestsBase {
             XCTFail("Failed to save comment")
             return
         }
-        guard case let .success(queriedComment) =
-            querySingleModelSynchronous(modelType: Comment8.self,
-                                        predicate: Comment8.keys.id == comment.id) else {
-                XCTFail("Failed to query comment")
-                return
+        guard case let .success(queriedComment) = await querySingleModelSynchronous(
+            modelType: Comment8.self,
+            predicate: Comment8.keys.id == comment.id
+        ) else {
+            XCTFail("Failed to query comment")
+            return
         }
         XCTAssertNil(queriedComment.post)
         post.blog = nil
@@ -228,11 +236,12 @@ class StorageEngineTestsOptionalAssociation: StorageEngineTestsBase {
             XCTFail("Failed to save post")
             return
         }
-        guard case let .success(queriedPost) =
-            querySingleModelSynchronous(modelType: Post8.self,
-                                        predicate: Post8.keys.id == post.id) else {
-                XCTFail("Failed to query post")
-                return
+        guard case let .success(queriedPost) = await querySingleModelSynchronous(
+            modelType: Post8.self,
+            predicate: Post8.keys.id == post.id
+        ) else {
+            XCTFail("Failed to query post")
+            return
         }
         XCTAssertNil(queriedPost.blog)
     }

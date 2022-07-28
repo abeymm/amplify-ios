@@ -187,9 +187,11 @@ class SyncEngineTestBase: XCTestCase {
     // MARK: - Data methods
 
     /// Saves a mutation event directly to StorageAdapter. Used for pre-populating database before tests
-    func saveMutationEvent(of mutationType: MutationEvent.MutationType,
+    func saveMutationEvent(
+        of mutationType: MutationEvent.MutationType,
                            for post: Post,
-                           inProcess: Bool = false) throws {
+                           inProcess: Bool = false
+    ) async throws {
         let mutationEvent = try MutationEvent(id: SyncEngineTestBase.mutationEventId(for: post),
                                               modelId: post.id,
                                               modelName: post.modelName,
@@ -199,28 +201,26 @@ class SyncEngineTestBase: XCTestCase {
                                               inProcess: inProcess)
 
         let mutationEventSaved = expectation(description: "Preloaded mutation event saved")
-        storageAdapter.save(mutationEvent) { result in
-            switch result {
-            case .failure(let dataStoreError):
-                XCTFail(String(describing: dataStoreError))
-            case .success:
-                mutationEventSaved.fulfill()
-            }
-        }
         wait(for: [mutationEventSaved], timeout: 1.0)
+        let result = await storageAdapter.save(mutationEvent)
+        switch result {
+        case .failure(let dataStoreError):
+            XCTFail(String(describing: dataStoreError))
+        case .success:
+            mutationEventSaved.fulfill()
+        }
     }
 
     /// Saves a Post record directly to StorageAdapter. Used for pre-populating database before tests
-    func savePost(_ post: Post) throws {
+    func savePost(_ post: Post) async throws {
         let postSaved = expectation(description: "Preloaded mutation event saved")
-        storageAdapter.save(post) { result in
-            switch result {
-            case .failure(let dataStoreError):
-                XCTFail(String(describing: dataStoreError))
-            case .success:
-                postSaved.fulfill()
-            }
-        }
+        let result = await storageAdapter.save(post)
+        switch result {
+        case .failure(let dataStoreError):
+            XCTFail(String(describing: dataStoreError))
+        case .success:
+            postSaved.fulfill()
+        }    
         wait(for: [postSaved], timeout: 1.0)
     }
 

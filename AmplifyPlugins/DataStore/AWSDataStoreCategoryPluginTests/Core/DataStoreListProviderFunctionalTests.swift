@@ -14,8 +14,8 @@ import XCTest
 
 class DataStoreListProviderFunctionalTests: BaseDataStoreTests {
 
-    func testDataStoreListProviderWithAssociationDataShouldLoad() {
-        let postId = preparePost4DataForTest()
+    func testDataStoreListProviderWithAssociationDataShouldLoad() async {
+        let postId = await preparePost4DataForTest()
         let provider = DataStoreListProvider<Comment4>(associatedId: postId, associatedField: "post")
         guard case .notLoaded = provider.loadedState else {
             XCTFail("Should not be loaded")
@@ -33,8 +33,8 @@ class DataStoreListProviderFunctionalTests: BaseDataStoreTests {
         XCTAssertEqual(comments.count, 2)
     }
 
-    func testDataStoreListProviderWithAssociationDataShouldLoadWithCompletion() {
-        let postId = preparePost4DataForTest()
+    func testDataStoreListProviderWithAssociationDataShouldLoadWithCompletion() async {
+        let postId = await preparePost4DataForTest()
         let provider = DataStoreListProvider<Comment4>(associatedId: postId, associatedField: "post")
         guard case .notLoaded = provider.loadedState else {
             XCTFail("Should not be loaded")
@@ -59,10 +59,10 @@ class DataStoreListProviderFunctionalTests: BaseDataStoreTests {
 
     // MARK: - Helpers
 
-    func preparePost4DataForTest() -> Model.Identifier {
+    func preparePost4DataForTest() async -> Model.Identifier {
         let post = Post4(title: "title")
-        populateData([post])
-        populateData([
+        await populateData([post])
+        await populateData([
             Comment4(content: "Comment 1", post: post),
             Comment4(content: "Comment 1", post: post)
         ])

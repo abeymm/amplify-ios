@@ -81,7 +81,7 @@ class OutgoingMutationQueueTests: SyncEngineTestBase {
 
         try startAmplifyAndWaitForSync()
 
-        Amplify.DataStore.save(post) { _ in }
+        _ = await Amplify.DataStore.save(post)
         await waitForExpectations(timeout: 5.0, handler: nil)
         Amplify.Hub.removeListener(hubListener)
     }
@@ -124,15 +124,13 @@ class OutgoingMutationQueueTests: SyncEngineTestBase {
                 mutationType: .create,
                 createdAt: .now())
 
-            storageAdapter.save(event) { result in
-                switch result {
-                case .failure(let dataStoreError):
-                    XCTFail(String(describing: dataStoreError))
-                case .success:
-                    mutationEventSaved.fulfill()
-                }
+            let result = await storageAdapter.save(event)
+            switch result {
+            case .failure(let dataStoreError):
+                XCTFail(String(describing: dataStoreError))
+            case .success:
+                mutationEventSaved.fulfill()
             }
-
         }
 
         wait(for: [mutationEventSaved], timeout: 1.0)

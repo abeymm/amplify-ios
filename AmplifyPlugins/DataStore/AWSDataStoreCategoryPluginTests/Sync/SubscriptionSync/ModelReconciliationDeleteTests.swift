@@ -17,7 +17,7 @@ typealias MutationSyncInProcessListener = GraphQLSubscriptionOperation<MutationS
 
 /// Tests system behavior at a higher level than the reconciler tests--ensures data is appropriately applied and deleted
 class ModelReconciliationDeleteTests: SyncEngineTestBase {
-
+    
     /// - Given:
     ///   - A sync-enabled DataStore
     ///   - The local datastore has received a delete mutation
@@ -30,7 +30,7 @@ class ModelReconciliationDeleteTests: SyncEngineTestBase {
         await tryOrFail {
             try setUpStorageAdapter(preCreating: [MockSynced.self])
         }
-
+        
         let model = MockSynced(id: "id-1")
         let localSyncMetadata = MutationSyncMetadata(modelId: model.id,
                                                      modelName: MockSynced.modelName,
@@ -41,9 +41,9 @@ class ModelReconciliationDeleteTests: SyncEngineTestBase {
         wait(for: [localMetadataSaved], timeout: 1.0)
         await storageAdapter.save(localSyncMetadata)
         localMetadataSaved.fulfill()
-
+        
         var valueListenerFromRequest: MutationSyncInProcessListener?
-
+        
         let responder = SubscribeRequestListenerResponder<MutationSync<AnyModel>> { request, valueListener, _ in
             if request.document.contains("onUpdateMockSynced") {
                 valueListenerFromRequest = valueListener
@@ -51,21 +51,21 @@ class ModelReconciliationDeleteTests: SyncEngineTestBase {
             }
             return nil
         }
-
+        
         apiPlugin.responders[.subscribeRequestListener] = responder
-
+        
         await tryOrFail {
             try setUpDataStore(modelRegistration: MockModelRegistration())
             mockRemoteSyncEngineFor_testUpdateAfterDelete()
             try startAmplifyAndWaitForSync()
         }
         wait(for: [expectationListener], timeout: 2.0)
-
+        
         guard let valueListener = valueListenerFromRequest else {
-                XCTFail("Incoming responder didn't set up listener")
-                return
+            XCTFail("Incoming responder didn't set up listener")
+            return
         }
-
+        
         let anyModel = try model.eraseToAnyModel()
         let remoteSyncMetadata = MutationSyncMetadata(modelId: model.id,
                                                       modelName: MockSynced.modelName,
@@ -74,51 +74,50 @@ class ModelReconciliationDeleteTests: SyncEngineTestBase {
                                                       version: 1)
         let remoteMutationSync = MutationSync(model: anyModel, syncMetadata: remoteSyncMetadata)
         valueListener(.data(.success(remoteMutationSync)))
-
+        
         // Because we expect this event to be dropped, there won't be a Hub notification or callback to listen to, so
         // we have to brute-force this wait
         Thread.sleep(forTimeInterval: 1.0)
-
+        
         let finalLocalMetadata = try storageAdapter.queryMutationSyncMetadata(for: model.id,
-                                                                                 modelName: MockSynced.modelName)
+                                                                              modelName: MockSynced.modelName)
         XCTAssertEqual(finalLocalMetadata?.version, 2)
         XCTAssertEqual(finalLocalMetadata?.deleted, true)
-
-        storageAdapter.query(modelSchema: MockSynced.schema) { results in
-            switch results {
-            case .failure(let error):
-                XCTAssertNil(error)
-            case .success(let results):
-                XCTAssertEqual(results.count, 0)
-            }
+        
+        let results = await storageAdapter.query(modelSchema: MockSynced.schema)
+        switch results {
+        case .failure(let error):
+            XCTAssertNil(error)
+        case .success(let results):
+            XCTAssertEqual(results.count, 0)
         }
     }
-
+    
     func mockRemoteSyncEngineFor_testUpdateAfterDelete() {
         remoteSyncEngineSink = syncEngine
             .publisher
             .sink(receiveCompletion: {_ in },
                   receiveValue: { (event: RemoteSyncEngineEvent) in
-                    switch event {
-                    case .mutationsPaused:
-                        // Assume AWSIncomingEventReconciliationQueue succeeds in establishing connections
-                        DispatchQueue.global().asyncAfter(deadline: DispatchTime.now() + .milliseconds(500)) {
-                            let request = GraphQLRequest<MutationSync<AnyModel>>
-                                .subscription(to: MockSynced.schema, subscriptionType: .onUpdate)
-                            let onUpdateListener: MutationSyncInProcessListener = { _ in
-                                print("emptyListener")
-                            }
-                            _ = self.apiPlugin.subscribe(request: request,
-                                                         valueListener: onUpdateListener,
-                                                         completionListener: nil)
-                            MockAWSIncomingEventReconciliationQueue.mockSend(event: .initialized)
+                switch event {
+                case .mutationsPaused:
+                    // Assume AWSIncomingEventReconciliationQueue succeeds in establishing connections
+                    DispatchQueue.global().asyncAfter(deadline: DispatchTime.now() + .milliseconds(500)) {
+                        let request = GraphQLRequest<MutationSync<AnyModel>>
+                            .subscription(to: MockSynced.schema, subscriptionType: .onUpdate)
+                        let onUpdateListener: MutationSyncInProcessListener = { _ in
+                            print("emptyListener")
                         }
-                    default:
-                        break
+                        _ = self.apiPlugin.subscribe(request: request,
+                                                     valueListener: onUpdateListener,
+                                                     completionListener: nil)
+                        MockAWSIncomingEventReconciliationQueue.mockSend(event: .initialized)
                     }
+                default:
+                    break
+                }
             })
     }
-
+    
     /// - Given:
     ///   - A sync-enabled DataStore
     ///   - The local datastore has no local model
@@ -128,36 +127,36 @@ class ModelReconciliationDeleteTests: SyncEngineTestBase {
     ///    - The delete metadata record is written but no model record is written
     func testDeleteWithNoLocalModel() async throws {
         let expectationListener = expectation(description: "listener")
-
+        
         await tryOrFail {
             try setUpStorageAdapter()
         }
-
+        
         var valueListenerFromRequest: MutationSyncInProcessListener?
-
+        
         let responder = SubscribeRequestListenerResponder<MutationSync<AnyModel>> {request, valueListener, _ in
             if request.document.contains("onUpdateMockSynced") {
                 valueListenerFromRequest = valueListener
                 expectationListener.fulfill()
             }
-
+            
             return nil
         }
-
+        
         apiPlugin.responders[.subscribeRequestListener] = responder
-
+        
         await tryOrFail {
             try setUpDataStore(modelRegistration: MockModelRegistration())
             mockRemoteSyncEngineFor_testDeleteWithNoLocalModel()
             try startAmplifyAndWaitForSync()
         }
         wait(for: [expectationListener], timeout: 1.0)
-
+        
         guard let valueListener = valueListenerFromRequest else {
             XCTFail("Incoming responder didn't set up listener")
             return
         }
-
+        
         let syncReceivedNotification = expectation(description: "Received 'syncReceived' update from Hub")
         let syncReceivedToken = Amplify.Hub.listen(to: .dataStore,
                                                    eventName: HubPayload.EventName.DataStore.syncReceived) { _ in
@@ -167,7 +166,7 @@ class ModelReconciliationDeleteTests: SyncEngineTestBase {
             XCTFail("Sync listener never registered")
             return
         }
-
+        
         let model = MockSynced(id: "id-1")
         let anyModel = try model.eraseToAnyModel()
         let remoteSyncMetadata = MutationSyncMetadata(modelId: model.id,
@@ -177,65 +176,64 @@ class ModelReconciliationDeleteTests: SyncEngineTestBase {
                                                       version: 2)
         let remoteMutationSync = MutationSync(model: anyModel, syncMetadata: remoteSyncMetadata)
         valueListener(.data(.success(remoteMutationSync)))
-
+        
         wait(for: [syncReceivedNotification], timeout: 1.0)
-
+        
         let finalLocalMetadata = try storageAdapter.queryMutationSyncMetadata(for: model.id,
-                                                                                 modelName: MockSynced.modelName)
+                                                                              modelName: MockSynced.modelName)
         XCTAssertEqual(finalLocalMetadata?.version, 2)
         XCTAssertEqual(finalLocalMetadata?.deleted, true)
-
-        storageAdapter.query(modelSchema: MockSynced.schema) { results in
-            switch results {
-            case .failure(let error):
-                XCTAssertNil(error)
-            case .success(let results):
-                XCTAssertEqual(results.count, 0)
-            }
+        
+        let results = await storageAdapter.query(modelSchema: MockSynced.schema)
+        switch results {
+        case .failure(let error):
+            XCTAssertNil(error)
+        case .success(let results):
+            XCTAssertEqual(results.count, 0)
         }
-
+        
         Amplify.Hub.removeListener(syncReceivedToken)
     }
-
+    
     func mockRemoteSyncEngineFor_testDeleteWithNoLocalModel() {
         remoteSyncEngineSink = syncEngine
             .publisher
             .sink(receiveCompletion: {_ in },
                   receiveValue: { (event: RemoteSyncEngineEvent) in
-                    switch event {
-                    case .mutationsPaused:
-                        // Assume AWSIncomingEventReconciliationQueue succeeds in establishing connections
-                        DispatchQueue.global().asyncAfter(deadline: DispatchTime.now() + .milliseconds(500)) {
-                            let request = GraphQLRequest<MutationSync<AnyModel>>
-                                .subscription(to: MockSynced.schema, subscriptionType: .onUpdate)
-                            let onUpdateListener: MutationSyncInProcessListener = { event in
-                                switch event {
-                                case .data(.success(let mutationEvent)):
-                                    self.storageAdapter.save(mutationEvent.syncMetadata) { result in
-                                        switch result {
-                                        case .success(let syncMetaData):
-                                            let payload = HubPayload(
-                                                eventName: HubPayload.EventName.DataStore.syncReceived,
-                                                data: syncMetaData
-                                            )
-                                            Amplify.Hub.dispatch(to: .dataStore, payload: payload)
-                                        default:
-                                            break
-                                        }
-
+                switch event {
+                case .mutationsPaused:
+                    // Assume AWSIncomingEventReconciliationQueue succeeds in establishing connections
+                    DispatchQueue.global().asyncAfter(deadline: DispatchTime.now() + .milliseconds(500)) {
+                        let request = GraphQLRequest<MutationSync<AnyModel>>
+                            .subscription(to: MockSynced.schema, subscriptionType: .onUpdate)
+                        let onUpdateListener: MutationSyncInProcessListener = { event in
+                            switch event {
+                            case .data(.success(let mutationEvent)):
+                                Task {
+                                    let result = await self.storageAdapter.save(mutationEvent.syncMetadata)
+                                    switch result {
+                                    case .success(let syncMetaData):
+                                        let payload = HubPayload(
+                                            eventName: HubPayload.EventName.DataStore.syncReceived,
+                                            data: syncMetaData
+                                        )
+                                        Amplify.Hub.dispatch(to: .dataStore, payload: payload)
+                                    default:
+                                        break
                                     }
-                                default:
-                                    break
                                 }
+                            default:
+                                break
                             }
-                            _ = self.apiPlugin.subscribe(request: request,
-                                                         valueListener: onUpdateListener,
-                                                         completionListener: nil)
-                            MockAWSIncomingEventReconciliationQueue.mockSend(event: .initialized)
                         }
-                    default:
-                        break
+                        _ = self.apiPlugin.subscribe(request: request,
+                                                     valueListener: onUpdateListener,
+                                                     completionListener: nil)
+                        MockAWSIncomingEventReconciliationQueue.mockSend(event: .initialized)
                     }
+                default:
+                    break
+                }
             })
     }
 }

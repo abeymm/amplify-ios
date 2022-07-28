@@ -49,7 +49,7 @@ class StorageEngineTestsManyToMany: StorageEngineTestsBase {
         }
     }
 
-    func testDeletePostAndPostEditor() {
+    func testDeletePostAndPostEditor() async {
         var post1 = M2MPost(title: "Post1")
         var user1 = M2MUser(username: "User1")
         let postEditors1 = M2MPostEditor(post: post1, editor: user1)
@@ -72,23 +72,28 @@ class StorageEngineTestsManyToMany: StorageEngineTestsBase {
                 return
         }
 
-        guard case .success =
-            querySingleModelSynchronous(modelType: M2MPost.self,
-                                        predicate: M2MPost.keys.id == post1.id) else {
-                                            XCTFail("Failed to query M2MPost")
-                                            return
+        guard case .success = await querySingleModelSynchronous(
+            modelType: M2MPost.self,
+            predicate: M2MPost.keys.id == post1.id
+        ) else {
+            XCTFail("Failed to query M2MPost")
+            return
         }
-        guard case .success =
-            querySingleModelSynchronous(modelType: M2MPostEditor.self,
-                                        predicate: M2MPostEditor.keys.id == postEditors1.id) else {
-                                            XCTFail("Failed to query M2MPostEditor")
-                                            return
+        
+        guard case .success = await querySingleModelSynchronous(
+            modelType: M2MPostEditor.self,
+            predicate: M2MPostEditor.keys.id == postEditors1.id
+        ) else {
+            XCTFail("Failed to query M2MPostEditor")
+            return
         }
-        guard case .success =
-            querySingleModelSynchronous(modelType: M2MUser.self,
-                                        predicate: M2MUser.keys.id == user1.id) else {
-                                            XCTFail("Failed to query M2MUser")
-                                            return
+        
+        guard case .success = await querySingleModelSynchronous(
+            modelType: M2MUser.self,
+            predicate: M2MUser.keys.id == user1.id
+        ) else {
+            XCTFail("Failed to query M2MUser")
+            return
         }
 
         let mutationEvents = expectation(description: "Mutation Events submitted to sync engine")
@@ -97,15 +102,18 @@ class StorageEngineTestsManyToMany: StorageEngineTestsBase {
         syncEngine.setCallbackOnSubmit(callback: { _ in
             mutationEvents.fulfill()
         })
-        guard case .success = deleteModelSynchronousOrFailOtherwise(modelType: M2MPost.self,
-                                                                    withId: post1.id) else {
+        
+        guard case .success = await deleteModelSynchronousOrFailOtherwise(
+            modelType: M2MPost.self,
+            withId: post1.id
+        ) else {
             XCTFail("Failed to delete post1")
             return
         }
         wait(for: [mutationEvents], timeout: defaultTimeout)
     }
 
-    func testDeleteUserAndPostEditor() {
+    func testDeleteUserAndPostEditor() async {
         var post1 = M2MPost(title: "Post1")
         var user1 = M2MUser(username: "User1")
         let postEditors1 = M2MPostEditor(post: post1, editor: user1)
@@ -128,36 +136,44 @@ class StorageEngineTestsManyToMany: StorageEngineTestsBase {
                 return
         }
 
-        guard case .success =
-            querySingleModelSynchronous(modelType: M2MPost.self,
-                                        predicate: M2MPost.keys.id == post1.id) else {
-                                            XCTFail("Failed to query M2MPost")
-                                            return
+        
+        guard case .success = await querySingleModelSynchronous(
+            modelType: M2MPost.self,
+            predicate: M2MPost.keys.id == post1.id
+        ) else {
+            XCTFail("Failed to query M2MPost")
+            return
         }
-        guard case .success =
-            querySingleModelSynchronous(modelType: M2MPostEditor.self,
-                                        predicate: M2MPostEditor.keys.id == postEditors1.id) else {
-                                            XCTFail("Failed to query M2MPostEditor")
-                                            return
+        
+        guard case .success = await querySingleModelSynchronous(
+            modelType: M2MPostEditor.self,
+            predicate: M2MPostEditor.keys.id == postEditors1.id
+        ) else {
+            XCTFail("Failed to query M2MPostEditor")
+            return
         }
-        guard case .success =
-            querySingleModelSynchronous(modelType: M2MUser.self,
-                                        predicate: M2MUser.keys.id == user1.id) else {
-                                            XCTFail("Failed to query M2MUser")
-                                            return
+        
+        guard case .success = await querySingleModelSynchronous(
+            modelType: M2MUser.self,
+            predicate: M2MUser.keys.id == user1.id
+        ) else {
+            XCTFail("Failed to query M2MUser")
+            return
         }
 
         let mutationEvents = expectation(description: "Mutation Events submitted to sync engine")
         mutationEvents.expectedFulfillmentCount = 2
+        wait(for: [mutationEvents], timeout: defaultTimeout)
 
         syncEngine.setCallbackOnSubmit(callback: { _ in
             mutationEvents.fulfill()
         })
-        guard case .success = deleteModelSynchronousOrFailOtherwise(modelType: M2MUser.self,
-                                                                    withId: user1.id) else {
+        guard case .success = await deleteModelSynchronousOrFailOtherwise(
+            modelType: M2MUser.self,
+            withId: user1.id
+        ) else {
             XCTFail("Failed to delete post1")
             return
         }
-        wait(for: [mutationEvents], timeout: defaultTimeout)
     }
 }

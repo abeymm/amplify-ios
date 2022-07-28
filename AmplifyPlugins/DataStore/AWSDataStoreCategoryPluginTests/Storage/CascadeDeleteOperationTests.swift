@@ -52,15 +52,17 @@ class CascadeDeleteOperationTests: StorageEngineTestsBase {
 
     // MARK: - Query and delete (No Sync)
 
-    func testWithId() {
+    func testWithId() async {
         let restaurant = Restaurant(restaurantName: "restaurant1")
         guard case .success = saveModelSynchronous(model: restaurant) else {
             XCTFail("Failed to save")
             return
         }
         let predicate: QueryPredicate = Restaurant.keys.id == restaurant.id
-        guard case .success(let queriedRestaurants) = queryModelSynchronous(modelType: Restaurant.self,
-                                                                            predicate: predicate) else {
+        guard case .success(let queriedRestaurants) = await queryModelSynchronous(
+            modelType: Restaurant.self,
+            predicate: predicate
+        ) else {
             XCTFail("Failed to query")
             return
         }
@@ -81,15 +83,17 @@ class CascadeDeleteOperationTests: StorageEngineTestsBase {
         }
         operation.start()
         wait(for: [completed], timeout: 1)
-        guard case .success(let queriedRestaurants) = queryModelSynchronous(modelType: Restaurant.self,
-                                                                            predicate: predicate) else {
+        guard case .success(let queriedRestaurants) = await queryModelSynchronous(
+            modelType: Restaurant.self,
+            predicate: predicate
+        ) else {
             XCTFail("Failed to query")
             return
         }
         XCTAssertEqual(queriedRestaurants.count, 0)
     }
 
-    func testWithIdAndCondition() {
+    func testWithIdAndCondition() async {
         let restaurantName = UUID().uuidString
         let restaurant = Restaurant(restaurantName: restaurantName)
         guard case .success = saveModelSynchronous(model: restaurant) else {
@@ -98,8 +102,10 @@ class CascadeDeleteOperationTests: StorageEngineTestsBase {
         }
         let predicate: QueryPredicate = Restaurant.keys.id == restaurant.id &&
             Restaurant.keys.restaurantName == restaurantName
-        guard case .success(let queriedRestaurants) = queryModelSynchronous(modelType: Restaurant.self,
-                                                                            predicate: predicate) else {
+        guard case .success(let queriedRestaurants) = await queryModelSynchronous(
+            modelType: Restaurant.self,
+            predicate: predicate
+        ) else {
             XCTFail("Failed to query")
             return
         }
@@ -122,15 +128,17 @@ class CascadeDeleteOperationTests: StorageEngineTestsBase {
         }
         operation.start()
         wait(for: [completed], timeout: 1)
-        guard case .success(let queriedRestaurants) = queryModelSynchronous(modelType: Restaurant.self,
-                                                                            predicate: predicate) else {
+        guard case .success(let queriedRestaurants) = await queryModelSynchronous(
+            modelType: Restaurant.self,
+            predicate: predicate
+        ) else {
             XCTFail("Failed to query")
             return
         }
         XCTAssertEqual(queriedRestaurants.count, 0)
     }
 
-    func testWithIdAndCondition_InvalidCondition() {
+    func testWithIdAndCondition_InvalidCondition() async {
         let restaurantName = UUID().uuidString
         let restaurant = Restaurant(restaurantName: restaurantName)
         guard case .success = saveModelSynchronous(model: restaurant) else {
@@ -139,7 +147,7 @@ class CascadeDeleteOperationTests: StorageEngineTestsBase {
         }
         let predicate: QueryPredicate = Restaurant.keys.id == restaurant.id &&
             Restaurant.keys.restaurantName == restaurantName
-        guard case .success(let queriedRestaurants) = queryModelSynchronous(modelType: Restaurant.self,
+        guard case .success(let queriedRestaurants) = await queryModelSynchronous(modelType: Restaurant.self,
                                                                             predicate: predicate) else {
             XCTFail("Failed to query")
             return
@@ -166,7 +174,7 @@ class CascadeDeleteOperationTests: StorageEngineTestsBase {
         }
         operation.start()
         wait(for: [completed], timeout: 1)
-        guard case .success(let queriedRestaurants) = queryModelSynchronous(modelType: Restaurant.self,
+        guard case .success(let queriedRestaurants) = await queryModelSynchronous(modelType: Restaurant.self,
                                                                             predicate: predicate) else {
             XCTFail("Failed to query")
             return
@@ -175,7 +183,7 @@ class CascadeDeleteOperationTests: StorageEngineTestsBase {
         XCTAssertEqual(queriedRestaurants[0].restaurantName, restaurantName)
     }
 
-    func testWithFilter() {
+    func testWithFilter() async {
         let restaurantName = UUID().uuidString
         let restaurant = Restaurant(restaurantName: restaurantName)
         guard case .success = saveModelSynchronous(model: restaurant) else {
@@ -184,8 +192,10 @@ class CascadeDeleteOperationTests: StorageEngineTestsBase {
         }
         let predicate: QueryPredicate = Restaurant.keys.id == restaurant.id &&
             Restaurant.keys.restaurantName == restaurantName
-        guard case .success(let queriedRestaurants) = queryModelSynchronous(modelType: Restaurant.self,
-                                                                            predicate: predicate) else {
+        guard case .success(let queriedRestaurants) = await queryModelSynchronous(
+            modelType: Restaurant.self,
+            predicate: predicate
+        ) else {
             XCTFail("Failed to query")
             return
         }
@@ -208,15 +218,17 @@ class CascadeDeleteOperationTests: StorageEngineTestsBase {
         }
         operation.start()
         wait(for: [completed], timeout: 1)
-        guard case .success(let queriedRestaurants) = queryModelSynchronous(modelType: Restaurant.self,
-                                                                            predicate: predicate) else {
+        guard case .success(let queriedRestaurants) = await queryModelSynchronous(
+            modelType: Restaurant.self,
+            predicate: predicate
+        ) else {
             XCTFail("Failed to query")
             return
         }
         XCTAssertEqual(queriedRestaurants.count, 0)
     }
 
-    func testWithFilter_NoneMatching() {
+    func testWithFilter_NoneMatching() async {
         let restaurantName = UUID().uuidString
         let restaurant = Restaurant(restaurantName: restaurantName)
         guard case .success = saveModelSynchronous(model: restaurant) else {
@@ -225,8 +237,10 @@ class CascadeDeleteOperationTests: StorageEngineTestsBase {
         }
         let predicate: QueryPredicate = Restaurant.keys.id == restaurant.id &&
             Restaurant.keys.restaurantName == restaurantName
-        guard case .success(let queriedRestaurants) = queryModelSynchronous(modelType: Restaurant.self,
-                                                                            predicate: predicate) else {
+        guard case .success(let queriedRestaurants) = await queryModelSynchronous(
+            modelType: Restaurant.self,
+            predicate: predicate
+        ) else {
             XCTFail("Failed to query")
             return
         }
@@ -248,8 +262,10 @@ class CascadeDeleteOperationTests: StorageEngineTestsBase {
         }
         operation.start()
         wait(for: [completed], timeout: 1)
-        guard case .success(let queriedRestaurants) = queryModelSynchronous(modelType: Restaurant.self,
-                                                                            predicate: predicate) else {
+        guard case .success(let queriedRestaurants) = await queryModelSynchronous(
+            modelType: Restaurant.self,
+            predicate: predicate
+        ) else {
             XCTFail("Failed to query")
             return
         }
@@ -259,15 +275,17 @@ class CascadeDeleteOperationTests: StorageEngineTestsBase {
 
     // MARK: - Query and delete (With Sync)
 
-    func testWithId_WithSync() {
+    func testWithId_WithSync() async {
         let restaurant = Restaurant(restaurantName: "restaurant1")
         guard case .success = saveModelSynchronous(model: restaurant) else {
             XCTFail("Failed to save")
             return
         }
         let predicate: QueryPredicate = Restaurant.keys.id == restaurant.id
-        guard case .success(let queriedRestaurants) = queryModelSynchronous(modelType: Restaurant.self,
-                                                                            predicate: predicate) else {
+        guard case .success(let queriedRestaurants) = await queryModelSynchronous(
+            modelType: Restaurant.self,
+            predicate: predicate
+        ) else {
             XCTFail("Failed to query")
             return
         }
@@ -314,15 +332,17 @@ class CascadeDeleteOperationTests: StorageEngineTestsBase {
         }
         operation.start()
         wait(for: [completed, receivedMutationEvent, expectedFailures, expectedSuccess], timeout: 1)
-        guard case .success(let queriedRestaurants) = queryModelSynchronous(modelType: Restaurant.self,
-                                                                            predicate: predicate) else {
+        guard case .success(let queriedRestaurants) = await queryModelSynchronous(
+            modelType: Restaurant.self,
+            predicate: predicate
+        ) else {
             XCTFail("Failed to query")
             return
         }
         XCTAssertEqual(queriedRestaurants.count, 0)
     }
 
-    func testWithIdAndCondition_WithSync() {
+    func testWithIdAndCondition_WithSync() async {
         let restaurantName = UUID().uuidString
         let restaurant = Restaurant(restaurantName: restaurantName)
         guard case .success = saveModelSynchronous(model: restaurant) else {
@@ -331,8 +351,10 @@ class CascadeDeleteOperationTests: StorageEngineTestsBase {
         }
         let predicate: QueryPredicate = Restaurant.keys.id == restaurant.id &&
             Restaurant.keys.restaurantName == restaurantName
-        guard case .success(let queriedRestaurants) = queryModelSynchronous(modelType: Restaurant.self,
-                                                                            predicate: predicate) else {
+        guard case .success(let queriedRestaurants) = await queryModelSynchronous(
+            modelType: Restaurant.self,
+            predicate: predicate
+        ) else {
             XCTFail("Failed to query")
             return
         }
@@ -381,15 +403,17 @@ class CascadeDeleteOperationTests: StorageEngineTestsBase {
         }
         operation.start()
         wait(for: [completed, receivedMutationEvent, expectedFailures, expectedSuccess], timeout: 1)
-        guard case .success(let queriedRestaurants) = queryModelSynchronous(modelType: Restaurant.self,
-                                                                            predicate: predicate) else {
+        guard case .success(let queriedRestaurants) = await queryModelSynchronous(
+            modelType: Restaurant.self,
+            predicate: predicate
+        ) else {
             XCTFail("Failed to query")
             return
         }
         XCTAssertEqual(queriedRestaurants.count, 0)
     }
 
-    func testWithFilter_WithSync() {
+    func testWithFilter_WithSync() async {
         let restaurantName = UUID().uuidString
         let restaurant = Restaurant(restaurantName: restaurantName)
         guard case .success = saveModelSynchronous(model: restaurant) else {
@@ -398,7 +422,7 @@ class CascadeDeleteOperationTests: StorageEngineTestsBase {
         }
         let predicate: QueryPredicate = Restaurant.keys.id == restaurant.id &&
             Restaurant.keys.restaurantName == restaurantName
-        guard case .success(let queriedRestaurants) = queryModelSynchronous(modelType: Restaurant.self,
+        guard case .success(let queriedRestaurants) = await queryModelSynchronous(modelType: Restaurant.self,
                                                                             predicate: predicate) else {
             XCTFail("Failed to query")
             return
@@ -447,8 +471,10 @@ class CascadeDeleteOperationTests: StorageEngineTestsBase {
         }
         operation.start()
         wait(for: [completed, receivedMutationEvent, expectedFailures, expectedSuccess], timeout: 1)
-        guard case .success(let queriedRestaurants) = queryModelSynchronous(modelType: Restaurant.self,
-                                                                            predicate: predicate) else {
+        guard case .success(let queriedRestaurants) = await queryModelSynchronous(
+            modelType: Restaurant.self,
+            predicate: predicate
+        ) else {
             XCTFail("Failed to query")
             return
         }
@@ -582,7 +608,7 @@ class CascadeDeleteOperationTests: StorageEngineTestsBase {
         XCTAssertEqual(submittedEvents[2].modelName, Restaurant.modelName)
     }
 
-    func testDeleteWithAssociatedModels_SingleFailure() {
+    func testDeleteWithAssociatedModels_SingleFailure() async {
         let restaurant = Restaurant(restaurantName: "restaurant1")
         let lunchStandardMenu = Menu(name: "Standard", menuType: .lunch, restaurant: restaurant)
         let oysters = Dish(dishName: "Fried oysters", menu: lunchStandardMenu)
@@ -607,7 +633,7 @@ class CascadeDeleteOperationTests: StorageEngineTestsBase {
             }
         }
 
-        let result = operation.queryAndDeleteTransaction()
+        let result = await operation.queryAndDeleteTransaction()
         switch result {
         case .success(let queryAndDeleteResult):
             XCTAssertEqual(queryAndDeleteResult.deletedModels.count, 1)

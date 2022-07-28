@@ -57,10 +57,10 @@ class StorageEngineTestsDelete: StorageEngineTestsBase {
 
     }
 
-    func testDeleteSuccessWhenItemDoesNotExist() {
+    func testDeleteSuccessWhenItemDoesNotExist() async {
         let teamA = Team(name: "A-Team")
         let projectA = Project(name: "ProjectA", team: teamA)
-        let result = deleteModelSynchronous(modelType: Project.self,
+        let result = await deleteModelSynchronous(modelType: Project.self,
                                             withId: projectA.id)
         switch result {
         case .success(let model):
@@ -73,11 +73,11 @@ class StorageEngineTestsDelete: StorageEngineTestsBase {
         }
     }
 
-    func testDeleteSuccessWhenItemDoesNotExistAndConditionMatches() {
+    func testDeleteSuccessWhenItemDoesNotExistAndConditionMatches() async {
         let teamA = Team(name: "A-Team")
         let projectA = Project(name: "ProjectA", team: teamA)
         let project = Project.keys
-        let result = deleteModelSynchronous(modelType: Project.self,
+        let result = await deleteModelSynchronous(modelType: Project.self,
                                             withId: projectA.id,
                                             where: project.name == "ProjectA")
         switch result {
@@ -91,7 +91,7 @@ class StorageEngineTestsDelete: StorageEngineTestsBase {
         }
     }
 
-    func testDeleteFailWithInvalidConditionWhenItemExistsAndConditionDoesNotMatch() {
+    func testDeleteFailWithInvalidConditionWhenItemExistsAndConditionDoesNotMatch() async {
         let teamA = Team(name: "A-Team")
         let projectA = Project(name: "ProjectA", team: teamA)
 
@@ -100,20 +100,26 @@ class StorageEngineTestsDelete: StorageEngineTestsBase {
                 XCTFail("Failed to save hierachy")
                 return
         }
-        guard case .success =
-            querySingleModelSynchronous(modelType: Project.self, predicate: Project.keys.id == projectA.id) else {
+        guard case .success = await querySingleModelSynchronous(
+            modelType: Project.self,
+            predicate: Project.keys.id == projectA.id
+        ) else {
                 XCTFail("Failed to query ProjectA")
                 return
         }
-        guard case .success =
-            querySingleModelSynchronous(modelType: Team.self, predicate: Project.keys.id == teamA.id) else {
+        guard case .success = await querySingleModelSynchronous(
+            modelType: Team.self,
+            predicate: Project.keys.id == teamA.id
+        ) else {
                 XCTFail("Failed to query TeamA")
                 return
         }
         let project = Project.keys
-        let result = deleteModelSynchronous(modelType: Project.self,
-                                            withId: projectA.id,
-                                            where: project.name == "NotProjectA")
+        let result = await deleteModelSynchronous(
+            modelType: Project.self,
+            withId: projectA.id,
+            where: project.name == "NotProjectA"
+        )
 
         switch result {
         case .success:
@@ -126,7 +132,7 @@ class StorageEngineTestsDelete: StorageEngineTestsBase {
         }
     }
 
-    func testDeleteSuccessWhenItemExistsAndConditionMatches() {
+    func testDeleteSuccessWhenItemExistsAndConditionMatches() async {
         let teamA = Team(name: "A-Team")
         let projectA = Project(name: "ProjectA", team: teamA)
 
@@ -145,13 +151,17 @@ class StorageEngineTestsDelete: StorageEngineTestsBase {
                 XCTFail("Failed to save hierachy")
                 return
         }
-        guard case .success =
-            querySingleModelSynchronous(modelType: Project.self, predicate: Project.keys.id == projectA.id) else {
+        guard case .success = await querySingleModelSynchronous(
+            modelType: Project.self,
+            predicate: Project.keys.id == projectA.id
+        ) else {
                 XCTFail("Failed to query ProjectA")
                 return
         }
-        guard case .success =
-            querySingleModelSynchronous(modelType: Team.self, predicate: Project.keys.id == teamA.id) else {
+        guard case .success = await querySingleModelSynchronous(
+            modelType: Team.self,
+            predicate: Project.keys.id == teamA.id
+        ) else {
                 XCTFail("Failed to query TeamA")
                 return
         }
@@ -161,9 +171,11 @@ class StorageEngineTestsDelete: StorageEngineTestsBase {
             mutationEventOnProject.fulfill()
         })
         let project = Project.keys
-        guard case .success = deleteModelSynchronousOrFailOtherwise(modelType: Project.self,
-                                                                    withId: projectA.id,
-                                                                    where: project.name == "ProjectA") else {
+        guard case .success = await deleteModelSynchronousOrFailOtherwise(
+            modelType: Project.self,
+            withId: projectA.id,
+            where: project.name == "ProjectA"
+        ) else {
             XCTFail("Failed to delete projectA")
             return
         }

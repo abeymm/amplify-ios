@@ -61,52 +61,56 @@ class MutationEventQueryTests: BaseDataStoreTests {
         }
     }
     
-    func testQueryPendingMutationEventsForModelIds() {
-        let mutationEvent1 = MutationEvent(id: UUID().uuidString,
-                                           modelId: UUID().uuidString,
-                                           modelName: Post.modelName,
-                                           json: "",
-                                           mutationType: .create)
-        let mutationEvent2 = MutationEvent(id: UUID().uuidString,
-                                           modelId: UUID().uuidString,
-                                           modelName: Post.modelName,
-                                           json: "",
-                                           mutationType: .create)
+    func testQueryPendingMutationEventsForModelIds() async {
+        let mutationEvent1 = MutationEvent(
+            id: UUID().uuidString,
+            modelId: UUID().uuidString,
+            modelName: Post.modelName,
+            json: "",
+            mutationType: .create
+        )
+        let mutationEvent2 = MutationEvent(
+            id: UUID().uuidString,
+            modelId: UUID().uuidString,
+            modelName: Post.modelName,
+            json: "",
+            mutationType: .create
+        )
         
         let saveMutationEvent1 = expectation(description: "save mutationEvent1 success")
-        storageAdapter.save(mutationEvent1) { result in
-            guard case .success = result else {
-                XCTFail("Failed to save metadata")
-                return
-            }
-            saveMutationEvent1.fulfill()
-        }
         wait(for: [saveMutationEvent1], timeout: 1)
+        let result = await storageAdapter.save(mutationEvent1)
+        guard case .success = result else {
+            XCTFail("Failed to save metadata")
+            return
+        }
+        saveMutationEvent1.fulfill()
         
         let saveMutationEvent2 = expectation(description: "save mutationEvent1 success")
-        storageAdapter.save(mutationEvent2) { result in
-            guard case .success = result else {
-                XCTFail("Failed to save metadata")
-                return
-            }
-            saveMutationEvent2.fulfill()
-        }
         wait(for: [saveMutationEvent2], timeout: 1)
+        let r2 = await storageAdapter.save(mutationEvent2)
+        guard case .success = r2 else {
+            XCTFail("Failed to save metadata")
+            return
+        }
+        saveMutationEvent2.fulfill()
+        
         
         let querySuccess = expectation(description: "query for metadata success")
         var modelIds = [mutationEvent1.modelId]
         modelIds.append(contentsOf: (1 ... 999).map { _ in UUID().uuidString })
         modelIds.append(mutationEvent2.modelId)
-        MutationEvent.pendingMutationEvents(for: modelIds,
-                                            storageAdapter: storageAdapter) { result in
-            switch result {
-            case .success(let mutationEvents):
-                XCTAssertEqual(mutationEvents.count, 2)
-                querySuccess.fulfill()
-            case .failure(let error): XCTFail("\(error)")
-            }
+        wait(for: [querySuccess], timeout: 1)
+        let r3 = await MutationEvent.pendingMutationEvents(
+            for: modelIds,
+            storageAdapter: storageAdapter
+        )
+        switch r3 {
+        case .success(let mutationEvents):
+            XCTAssertEqual(mutationEvents.count, 2)
+            querySuccess.fulfill()
+        case .failure(let error): XCTFail("\(error)")
         }
         
-        wait(for: [querySuccess], timeout: 1)
     }
 }

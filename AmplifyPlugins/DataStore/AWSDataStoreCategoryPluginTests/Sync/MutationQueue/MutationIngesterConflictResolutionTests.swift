@@ -37,7 +37,7 @@ class MutationIngesterConflictResolutionTests: SyncEngineTestBase {
         
         await tryOrFail {
             try setUpStorageAdapter(preCreating: [Post.self, Comment.self])
-            try saveMutationEvent(of: .create, for: post)
+            try await saveMutationEvent(of: .create, for: post)
             try setUpDataStore()
             try startAmplifyAndWaitForSync()
         }
@@ -84,8 +84,8 @@ class MutationIngesterConflictResolutionTests: SyncEngineTestBase {
         
         await tryOrFail {
             try setUpStorageAdapter(preCreating: [Post.self, Comment.self])
-            try saveMutationEvent(of: .create, for: post)
-            try savePost(post)
+            try await saveMutationEvent(of: .create, for: post)
+            try await savePost(post)
             try setUpDataStore()
             try startAmplifyAndWaitForSync()
         }
@@ -143,8 +143,8 @@ class MutationIngesterConflictResolutionTests: SyncEngineTestBase {
         
         await tryOrFail {
             try setUpStorageAdapter(preCreating: [Post.self, Comment.self])
-            try saveMutationEvent(of: .create, for: post)
-            try savePost(post)
+            try await saveMutationEvent(of: .create, for: post)
+            try await savePost(post)
             try setUpDataStore()
             try startAmplifyAndWaitForSync()
         }
@@ -199,7 +199,7 @@ class MutationIngesterConflictResolutionTests: SyncEngineTestBase {
         
         await tryOrFail {
             try setUpStorageAdapter(preCreating: [Post.self, Comment.self])
-            try saveMutationEvent(of: .update, for: post)
+            try await saveMutationEvent(of: .update, for: post)
             try setUpDataStore()
             try startAmplifyAndWaitForSync()
         }
@@ -249,8 +249,8 @@ class MutationIngesterConflictResolutionTests: SyncEngineTestBase {
         
         await tryOrFail {
             try setUpStorageAdapter(preCreating: [Post.self, Comment.self])
-            try saveMutationEvent(of: .update, for: post)
-            try savePost(post)
+            try await saveMutationEvent(of: .update, for: post)
+            try await savePost(post)
             try setUpDataStore()
             try startAmplifyAndWaitForSync()
         }
@@ -305,8 +305,8 @@ class MutationIngesterConflictResolutionTests: SyncEngineTestBase {
         
         await tryOrFail {
             try setUpStorageAdapter(preCreating: [Post.self, Comment.self])
-            try saveMutationEvent(of: .update, for: post)
-            try savePost(post)
+            try await saveMutationEvent(of: .update, for: post)
+            try await savePost(post)
             try setUpDataStore()
             try startAmplifyAndWaitForSync()
         }
@@ -360,7 +360,7 @@ class MutationIngesterConflictResolutionTests: SyncEngineTestBase {
         
         await tryOrFail {
             try setUpStorageAdapter(preCreating: [Post.self, Comment.self])
-            try saveMutationEvent(of: .delete, for: post)
+            try await saveMutationEvent(of: .delete, for: post)
             try setUpDataStore()
             try startAmplifyAndWaitForSync()
         }
@@ -412,8 +412,8 @@ class MutationIngesterConflictResolutionTests: SyncEngineTestBase {
         
         await tryOrFail {
             try setUpStorageAdapter(preCreating: [Post.self, Comment.self])
-            try saveMutationEvent(of: .delete, for: post)
-            try savePost(post)
+            try await saveMutationEvent(of: .delete, for: post)
+            try await savePost(post)
             try setUpDataStore()
             try startAmplifyAndWaitForSync()
         }
@@ -518,7 +518,7 @@ class MutationIngesterConflictResolutionTests: SyncEngineTestBase {
         
         await tryOrFail {
             try setUpStorageAdapter(preCreating: [Post.self, Comment.self])
-            try savePost(post)
+            try await savePost(post)
             try setUpDataStore()
             try startAmplifyAndWaitForSync()
         }
@@ -568,7 +568,7 @@ class MutationIngesterConflictResolutionTests: SyncEngineTestBase {
         
         await tryOrFail {
             try setUpStorageAdapter(preCreating: [Post.self, Comment.self])
-            try savePost(post)
+            try await savePost(post)
             try setUpDataStore()
             try startAmplifyAndWaitForSync()
         }
@@ -624,7 +624,7 @@ class MutationIngesterConflictResolutionTests: SyncEngineTestBase {
             try setUpStorageAdapter(preCreating: [Post.self, Comment.self])
             try setUpDataStore()
             try startAmplifyAndWaitForSync()
-            try saveMutationEvent(of: .create, for: post, inProcess: true)
+            try await saveMutationEvent(of: .create, for: post, inProcess: true)
         }
         
         let saveResultReceived = expectation(description: "Save result received")
@@ -671,8 +671,8 @@ class MutationIngesterConflictResolutionTests: SyncEngineTestBase {
             try setUpStorageAdapter(preCreating: [Post.self, Comment.self])
             try setUpDataStore()
             try startAmplifyAndWaitForSync()
-            try savePost(post)
-            try saveMutationEvent(of: .create, for: post, inProcess: true)
+            try await savePost(post)
+            try await saveMutationEvent(of: .create, for: post, inProcess: true)
         }
         
         var mutatedPost = post
@@ -721,8 +721,8 @@ class MutationIngesterConflictResolutionTests: SyncEngineTestBase {
             try setUpStorageAdapter(preCreating: [Post.self, Comment.self])
             try setUpDataStore()
             try startAmplifyAndWaitForSync()
-            try savePost(post)
-            try saveMutationEvent(of: .create, for: post, inProcess: true)
+            try await savePost(post)
+            try await saveMutationEvent(of: .create, for: post, inProcess: true)
         }
         
         let deleteResultReceived = expectation(description: "Delete result received")

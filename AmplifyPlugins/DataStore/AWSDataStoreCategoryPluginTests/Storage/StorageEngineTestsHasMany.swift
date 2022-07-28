@@ -50,7 +50,7 @@ class StorageEngineTestsHasMany: StorageEngineTestsBase {
         }
     }
 
-    func testDeleteParentEmitsMutationEventsForParentAndChild() {
+    func testDeleteParentEmitsMutationEventsForParentAndChild() async {
         let dreamRestaurant = Restaurant(restaurantName: "Dream Cafe")
         let lunchSpecialMenu = Menu(name: "Specials", menuType: .lunch, restaurant: dreamRestaurant)
         let lunchStandardMenu = Menu(name: "Standard", menuType: .lunch, restaurant: dreamRestaurant)
@@ -82,21 +82,26 @@ class StorageEngineTestsHasMany: StorageEngineTestsBase {
                 return
         }
 
-        guard case .success =
-            querySingleModelSynchronous(modelType: Restaurant.self,
-                                        predicate: Restaurant.keys.id == dreamRestaurant.id) else {
-                XCTFail("Failed to query Restaurant")
-                return
+        guard case .success = await querySingleModelSynchronous(
+            modelType: Restaurant.self,
+            predicate: Restaurant.keys.id == dreamRestaurant.id
+        ) else {
+            XCTFail("Failed to query Restaurant")
+            return
         }
-        guard case .success =
-            queryModelSynchronous(modelType: Menu.self, predicate: Menu.keys.restaurant == dreamRestaurant.id) else {
+        guard case .success = await queryModelSynchronous(
+            modelType: Menu.self,
+            predicate: Menu.keys.restaurant == dreamRestaurant.id
+        ) else {
                 XCTFail("Failed to query Menu")
                 return
         }
-        guard case .success(let dishes) =
-            queryModelSynchronous(modelType: Dish.self, predicate: Dish.keys.menu == lunchStandardMenu.id) else {
-                XCTFail("Failed to query Dishes")
-                return
+        guard case .success(let dishes) = await queryModelSynchronous(
+            modelType: Dish.self,
+            predicate: Dish.keys.menu == lunchStandardMenu.id
+        ) else {
+            XCTFail("Failed to query Dishes")
+            return
         }
         XCTAssertEqual(dishes.count, 2)
 
@@ -105,8 +110,10 @@ class StorageEngineTestsHasMany: StorageEngineTestsBase {
         syncEngine.setCallbackOnSubmit(callback: { _ in
             receivedMutationEvent.fulfill()
         })
-        guard case .success = deleteModelSynchronousOrFailOtherwise(modelType: Restaurant.self,
-                                                                    withId: dreamRestaurant.id) else {
+        guard case .success = await deleteModelSynchronousOrFailOtherwise(
+            modelType: Restaurant.self,
+            withId: dreamRestaurant.id
+        ) else {
             XCTFail("Failed to delete restaurant")
             return
         }
@@ -136,7 +143,7 @@ class StorageEngineTestsHasMany: StorageEngineTestsBase {
      *  make two queries: One query with 950 expressions, and one query with 1 expression.
      *
      */
-    func testStressDeleteTopLevelMultiLevelHasManyRelationship() {
+    func testStressDeleteTopLevelMultiLevelHasManyRelationship() async {
         let iterations = 500
         let numberOfMenus = iterations * 2
         let numberOfDishes = iterations * 4
@@ -167,25 +174,28 @@ class StorageEngineTestsHasMany: StorageEngineTestsBase {
             }
         }
         // Query individually without lazy loading and verify counts.
-        guard case .success(let savedRestaurant) =
-            querySingleModelSynchronous(modelType: Restaurant.self,
-                                        predicate: Restaurant.keys.id == restaurant1.id) else {
-                                            XCTFail("Failed to query Restaurant")
-                                            return
+        guard case .success(let savedRestaurant) = await querySingleModelSynchronous(
+            modelType: Restaurant.self,
+            predicate: Restaurant.keys.id == restaurant1.id
+        ) else {
+            XCTFail("Failed to query Restaurant")
+            return
         }
         XCTAssertEqual(savedRestaurant.id, restaurant1.id)
-        guard case .success(let menus) =
-            queryModelSynchronous(modelType: Menu.self,
-                                  predicate: QueryPredicateConstant.all) else {
-                                    XCTFail("Failed to query menus")
-                                    return
+        guard case .success(let menus) = await queryModelSynchronous(
+            modelType: Menu.self,
+            predicate: QueryPredicateConstant.all
+        ) else {
+            XCTFail("Failed to query menus")
+            return
         }
         XCTAssertEqual(menus.count, numberOfMenus)
-        guard case .success(let dishes) =
-            queryModelSynchronous(modelType: Dish.self,
-                                  predicate: QueryPredicateConstant.all) else {
-                                    XCTFail("Failed to query dishes")
-                                    return
+        guard case .success(let dishes) = await queryModelSynchronous(
+            modelType: Dish.self,
+            predicate: QueryPredicateConstant.all
+        ) else {
+            XCTFail("Failed to query dishes")
+            return
         }
         XCTAssertEqual(dishes.count, numberOfDishes)
 
@@ -196,18 +206,20 @@ class StorageEngineTestsHasMany: StorageEngineTestsBase {
         syncEngine.setCallbackOnSubmit(callback: { _ in
             receivedMutationEvent.fulfill()
         })
-        guard case .success = deleteModelSynchronousOrFailOtherwise(modelType: Restaurant.self,
-                                                                    withId: restaurant1.id,
-                                                                    timeout: 100) else {
-                                                                        XCTFail("Failed to delete restaurant")
-                                                                        return
-        }
         wait(for: [receivedMutationEvent], timeout: 100)
+        guard case .success = await deleteModelSynchronousOrFailOtherwise(
+            modelType: Restaurant.self,
+            withId: restaurant1.id,
+            timeout: 100
+        ) else {
+            XCTFail("Failed to delete restaurant")
+            return
+        }
         // let timeElapsed = CFAbsoluteTimeGetCurrent() - startTime
         // print("Time elapsed time to delete: \(timeElapsed) s.")
     }
 
-    func testErrorOnSingleSubmissionToSyncEngine() {
+    func testErrorOnSingleSubmissionToSyncEngine() async {
          let restaurant1 = Restaurant(restaurantName: "restaurant1")
          let lunchStandardMenu = Menu(name: "Standard", menuType: .lunch, restaurant: restaurant1)
          let oysters = Dish(dishName: "Fried oysters", menu: lunchStandardMenu)
@@ -244,7 +256,7 @@ class StorageEngineTestsHasMany: StorageEngineTestsBase {
             }
         }
 
-        guard case .failure(let error) = deleteModelSynchronousOrFailOtherwise(modelType: Restaurant.self,
+        guard case .failure(let error) = await deleteModelSynchronousOrFailOtherwise(modelType: Restaurant.self,
                                                                                withId: restaurant1.id) else {
             XCTFail("Deleting should have failed due to our mock")
             return

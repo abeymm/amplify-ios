@@ -19,38 +19,38 @@ class ListTests: BaseDataStoreTests {
     ///   - the `post.comments` is accessed synchronously
     /// - Then:
     ///   - the list should be correctly loaded and populated
-    func testSynchronousLazyLoad() {
+    func testSynchronousLazyLoad() async {
         let expect = expectation(description: "a lazy list should return the correct results")
 
-        let postId = preparePostDataForTest()
+        let postId = await preparePostDataForTest()
 
-        Amplify.DataStore.query(Post.self, byId: postId) {
-            switch $0 {
-            case .success(let result):
-                if let post = result {
-                    if let comments = post.comments {
-                        guard case .notLoaded = comments.loadedState else {
-                            XCTFail("Should not be loaded")
-                            return
-                        }
-                        XCTAssertEqual(comments.count, 2)
-                        guard case .loaded = comments.loadedState else {
-                            XCTFail("Should be loaded")
-                            return
-                        }
-                    } else {
-                        XCTFail("post.comments should not be nil")
+        let result = await Amplify.DataStore.query(Post.self, byId: postId)
+        switch result {
+        case .success(let result):
+            if let post = result {
+                if let comments = post.comments {
+                    guard case .notLoaded = comments.loadedState else {
+                        XCTFail("Should not be loaded")
+                        return
+                    }
+                    XCTAssertEqual(comments.count, 2)
+                    guard case .loaded = comments.loadedState else {
+                        XCTFail("Should be loaded")
+                        return
                     }
                 } else {
-                    XCTFail("Failed to query recently saved post by id")
+                    XCTFail("post.comments should not be nil")
                 }
-                expect.fulfill()
-            case .failure(let error):
-                XCTFail(error.errorDescription)
-                expect.fulfill()
+            } else {
+                XCTFail("Failed to query recently saved post by id")
             }
+            expect.fulfill()
+        case .failure(let error):
+            XCTFail(error.errorDescription)
+            expect.fulfill()
         }
-
+        
+        
         wait(for: [expect], timeout: 1)
     }
 
@@ -59,10 +59,10 @@ class ListTests: BaseDataStoreTests {
     ///   - the `post.comments` is accessed asynchronously with a callback
     /// - Then:
     ///   - the list should be correctly loaded and populated
-    func testAsynchronousLazyLoadWithCallback() {
+    func testAsynchronousLazyLoadWithCallback() async {
         let expect = expectation(description: "a lazy list should return the correct results")
 
-        let postId = preparePostDataForTest()
+        let postId = await preparePostDataForTest()
 
         func checkComments(_ comments: List<Comment>) {
             guard case .notLoaded = comments.loadedState else {
@@ -85,29 +85,27 @@ class ListTests: BaseDataStoreTests {
             }
         }
 
-        Amplify.DataStore.query(Post.self, byId: postId) {
-            switch $0 {
-            case .success(let result):
-                if let post = result, let comments = post.comments {
-                    checkComments(comments)
-                } else {
-                    XCTFail("Failed to query recently saved post by id")
-                }
-            case .failure(let error):
-                XCTFail(error.errorDescription)
-                expect.fulfill()
-            }
-        }
-
         wait(for: [expect], timeout: 1)
+        let result = await Amplify.DataStore.query(Post.self, byId: postId)
+        switch result {
+        case .success(let result):
+            if let post = result, let comments = post.comments {
+                checkComments(comments)
+            } else {
+                XCTFail("Failed to query recently saved post by id")
+            }
+        case .failure(let error):
+            XCTFail(error.errorDescription)
+            expect.fulfill()
+        }
     }
 
     // MARK: - Helpers
 
-    func preparePostDataForTest() -> Model.Identifier {
+    func preparePostDataForTest() async -> Model.Identifier {
         let post = Post(title: "title", content: "content", createdAt: .now())
-        populateData([post])
-        populateData([
+        await populateData([post])
+        await populateData([
             Comment(content: "Comment 1", createdAt: .now(), post: post),
             Comment(content: "Comment 2", createdAt: .now(), post: post)
         ])
