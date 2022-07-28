@@ -75,7 +75,22 @@
                   Identifier = "LocalSubscriptionWithJSONModelTests">
                </Test>
                <Test
-                  Identifier = "MutationEventExtensionsTest">
+                  Identifier = "ModelReconciliationDeleteTests">
+               </Test>
+               <Test
+                  Identifier = "ModelReconciliationQueueBehaviorTests/testProcessesBufferedEvents()">
+               </Test>
+               <Test
+                  Identifier = "ModelReconciliationQueueBehaviorTests/testProcessesBufferedEventsSerially()">
+               </Test>
+               <Test
+                  Identifier = "MutationEventQueryTests/testQueryPendingMutationEvent()">
+               </Test>
+               <Test
+                  Identifier = "MutationEventQueryTests/testQueryPendingMutationEventsForModelIds()">
+               </Test>
+               <Test
+                  Identifier = "MutationIngesterConflictResolutionTests">
                </Test>
                <Test
                   Identifier = "MutationIngesterConflictResolutionTests/testDeleteMutationAppendedToInProcessQueue()">
@@ -84,7 +99,34 @@
                   Identifier = "MutationSyncMetadataMigrationTests/testApply()">
                </Test>
                <Test
-                  Identifier = "SQLiteMutationSyncMetadataMigrationDelegateTests">
+                  Identifier = "OutgoingMutationQueueNetworkTests">
+               </Test>
+               <Test
+                  Identifier = "OutgoingMutationQueueTests/testMutationQueueCreateSendsSync()">
+               </Test>
+               <Test
+                  Identifier = "ReconcileAndLocalSaveOperationTests/testApplyRemoteModels_createDisposition()">
+               </Test>
+               <Test
+                  Identifier = "ReconcileAndLocalSaveOperationTests/testApplyRemoteModels_deleteDisposition()">
+               </Test>
+               <Test
+                  Identifier = "ReconcileAndLocalSaveOperationTests/testApplyRemoteModels_failWithConstraintViolationShouldBeSuccessful()">
+               </Test>
+               <Test
+                  Identifier = "ReconcileAndLocalSaveOperationTests/testApplyRemoteModels_multipleDispositions()">
+               </Test>
+               <Test
+                  Identifier = "ReconcileAndLocalSaveOperationTests/testApplyRemoteModels_updateDisposition()">
+               </Test>
+               <Test
+                  Identifier = "ReconcileAndLocalSaveOperationTests/testReconcile()">
+               </Test>
+               <Test
+                  Identifier = "SQLiteMutationSyncMetadataMigrationDelegateTests/testDeleteModelSyncMetadata()">
+               </Test>
+               <Test
+                  Identifier = "SQLiteMutationSyncMetadataMigrationDelegateTests/testDeleteMutationSyncMetadata()">
                </Test>
                <Test
                   Identifier = "SQLiteMutationSyncMetadataMigrationDelegateTests/testMigrate()">

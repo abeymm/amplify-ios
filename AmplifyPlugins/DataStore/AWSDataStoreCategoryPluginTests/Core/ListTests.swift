@@ -20,7 +20,7 @@ class ListTests: BaseDataStoreTests {
     /// - Then:
     ///   - the list should be correctly loaded and populated
     func testSynchronousLazyLoad() async {
-        let expect = expectation(description: "a lazy list should return the correct results")
+//        let expect = expectation(description: "a lazy list should return the correct results")
 
         let postId = await preparePostDataForTest()
 
@@ -44,14 +44,14 @@ class ListTests: BaseDataStoreTests {
             } else {
                 XCTFail("Failed to query recently saved post by id")
             }
-            expect.fulfill()
+//            expect.fulfill()
         case .failure(let error):
             XCTFail(error.errorDescription)
-            expect.fulfill()
+//            expect.fulfill()
         }
         
         
-        wait(for: [expect], timeout: 1)
+//        wait(for: [expect], timeout: 1)
     }
 
     /// - Given: a list a `Post` and a few comments associated with it
@@ -85,7 +85,6 @@ class ListTests: BaseDataStoreTests {
             }
         }
 
-        wait(for: [expect], timeout: 1)
         let result = await Amplify.DataStore.query(Post.self, byId: postId)
         switch result {
         case .success(let result):
@@ -96,7 +95,6 @@ class ListTests: BaseDataStoreTests {
             }
         case .failure(let error):
             XCTFail(error.errorDescription)
-            expect.fulfill()
         }
     }
 

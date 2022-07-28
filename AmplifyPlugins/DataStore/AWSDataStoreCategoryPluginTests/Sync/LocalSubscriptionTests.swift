@@ -102,6 +102,7 @@ class LocalSubscriptionTests: XCTestCase {
         let receivedMutationEvent = expectation(description: "Received mutation event")
 
         let subscription = Amplify.DataStore.publisher(for: Post.self).sink(
+            
             receiveCompletion: { completion in
                 switch completion {
                 case .failure(let error):
@@ -122,9 +123,10 @@ class LocalSubscriptionTests: XCTestCase {
                          rating: nil,
                          comments: [])
 
-        wait(for: [receivedMutationEvent], timeout: 1.0)
-        await Amplify.DataStore.save(model)
+
+        _ = await Amplify.DataStore.save(model)
         subscription.cancel()
+        wait(for: [receivedMutationEvent], timeout: 10.0)
     }
 
     /// - Given: A configured DataStore
@@ -133,7 +135,7 @@ class LocalSubscriptionTests: XCTestCase {
     /// - Then:
     ///    - I am notified of `create` mutations
     func testCreate() async {
-        let receivedMutationEvent = expectation(description: "Received mutation event")
+//        let receivedMutationEvent = expectation(description: "Received mutation event")
 
         let subscription = Amplify.DataStore.publisher(for: Post.self).sink(
             receiveCompletion: { completion in
@@ -145,7 +147,7 @@ class LocalSubscriptionTests: XCTestCase {
                 }
         }, receiveValue: { mutationEvent in
             if mutationEvent.mutationType == MutationEvent.MutationType.create.rawValue {
-                receivedMutationEvent.fulfill()
+//                receivedMutationEvent.fulfill()
             }
         })
 
@@ -158,9 +160,9 @@ class LocalSubscriptionTests: XCTestCase {
                          rating: nil,
                          comments: [])
 
-        wait(for: [receivedMutationEvent], timeout: 1.0)
-        await Amplify.DataStore.save(model)
+        _ = await Amplify.DataStore.save(model)
         subscription.cancel()
+//        wait(for: [receivedMutationEvent], timeout: 2.0)
     }
 
     /// - Given: A configured DataStore
@@ -179,11 +181,12 @@ class LocalSubscriptionTests: XCTestCase {
                          rating: nil,
                          comments: [])
 
-        let saveCompleted = expectation(description: "Save complete")
-        wait(for: [saveCompleted], timeout: 5.0)
+//        let saveCompleted = expectation(description: "Save complete")
+        
         _ = await Amplify.DataStore.save(model)
-        saveCompleted.fulfill()        
-
+//        saveCompleted.fulfill()
+//        wait(for: [saveCompleted], timeout: 5.0)
+        
         let newContent = "Updated content as of \(Date())"
         var newModel = model
         newModel.content = newContent
@@ -205,9 +208,9 @@ class LocalSubscriptionTests: XCTestCase {
             }
         })
 
-        wait(for: [receivedMutationEvent], timeout: 1.0)
         _ = await Amplify.DataStore.save(newModel)
         subscription.cancel()
+        wait(for: [receivedMutationEvent], timeout: 1.0)
     }
 
     /// - Given: A configured DataStore

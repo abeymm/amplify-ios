@@ -101,12 +101,12 @@ class SQLiteStorageEngineAdapterTests: BaseDataStoreTests {
     ///   - call `query(Post, where: title == post.title)` to check
     ///   if the model was correctly inserted using a predicate
     func testInsertPostAndSelectByTitle() async {
-        let expectation = self.expectation(
-            description: "it should save and select a Post from the database")
+//        let expectation = self.expectation(
+//            description: "it should save and select a Post from the database")
 
         // insert a post
         let post = Post(title: "title", content: "content", createdAt: .now())
-        wait(for: [expectation], timeout: 5)
+//        wait(for: [expectation], timeout: 5)
         let saveResult = await storageAdapter.save(post)
         switch saveResult {
         case .success:
@@ -121,14 +121,14 @@ class SQLiteStorageEngineAdapterTests: BaseDataStoreTests {
                     XCTAssert(post.content == savedPost.content)
                     XCTAssertEqual(post.createdAt.iso8601String, savedPost.createdAt.iso8601String)
                 }
-                expectation.fulfill()
+//                expectation.fulfill()
             case .failure(let error):
                 XCTFail(String(describing: error))
-                expectation.fulfill()
+//                expectation.fulfill()
             }
         case .failure(let error):
             XCTFail(String(describing: error))
-            expectation.fulfill()
+//            expectation.fulfill()
         }
     }
 
@@ -404,16 +404,16 @@ class SQLiteStorageEngineAdapterTests: BaseDataStoreTests {
     func testInsertPostAndThenDeleteByIdWithPredicateThatDoesNotMatch() async {
         let dateTestStart = Temporal.DateTime.now()
         let dateInFuture = dateTestStart + .seconds(10)
-        let saveExpectation = expectation(description: "Saved")
-        let deleteCompleteExpectation = expectation(description: "Delete completed")
-        let queryExpectation = expectation(description: "Queried")
-        wait(for: [saveExpectation, deleteCompleteExpectation, queryExpectation], timeout: 2)
+//        let saveExpectation = expectation(description: "Saved")
+//        let deleteCompleteExpectation = expectation(description: "Delete completed")
+//        let queryExpectation = expectation(description: "Queried")
+//        wait(for: [saveExpectation, deleteCompleteExpectation, queryExpectation], timeout: 2)
         
         let post = Post(title: "title1", content: "content1", createdAt: dateInFuture)
         let insertResult = await storageAdapter.save(post)
         switch insertResult {
         case .success:
-            saveExpectation.fulfill()
+//            saveExpectation.fulfill()
             let postKeys = Post.keys
             let predicate = postKeys.createdAt.lt(dateTestStart)
             let deleteResult = await self.storageAdapter.delete(
@@ -424,9 +424,9 @@ class SQLiteStorageEngineAdapterTests: BaseDataStoreTests {
             )
             switch deleteResult {
             case .success:
-                deleteCompleteExpectation.fulfill()
+//                deleteCompleteExpectation.fulfill()
                 self.checkIfPostExists(id: post.id)
-                queryExpectation.fulfill()
+//                queryExpectation.fulfill()
             case .failure(let error):
                 XCTFail(error.errorDescription)
             }
@@ -442,7 +442,7 @@ class SQLiteStorageEngineAdapterTests: BaseDataStoreTests {
         let saveExpectation = expectation(description: "Saved")
         let deleteExpectation = expectation(description: "Deleted")
         let queryExpectation = expectation(description: "Queried")
-        wait(for: [saveExpectation, deleteExpectation, queryExpectation], timeout: 2)
+
 
         let post = Post(title: "title1", content: "content1", createdAt: dateInFuture)
         let insertResult = await storageAdapter.save(post)
@@ -464,6 +464,7 @@ class SQLiteStorageEngineAdapterTests: BaseDataStoreTests {
         case .failure(let error):
             XCTFail(String(describing: error))
         }
+        wait(for: [saveExpectation, deleteExpectation, queryExpectation], timeout: 2)
     }
 
     func testInsertionOfManyItemsThenDeleteAllByPredicateConstant() async {
@@ -660,7 +661,6 @@ class SQLiteStorageEngineAdapterTests: BaseDataStoreTests {
             version: 1
         )
 
-        wait(for: [querySuccess], timeout: 1)
         let result = await storageAdapter.save(metadata)
         switch result {
         case .success:
@@ -673,7 +673,7 @@ class SQLiteStorageEngineAdapterTests: BaseDataStoreTests {
             }
         case .failure(let error): XCTFail("\(error)")
         }
-        
+        wait(for: [querySuccess], timeout: 1)
     }
 
     func testQueryMutationSyncMetadataForModelIds() async {
@@ -690,24 +690,24 @@ class SQLiteStorageEngineAdapterTests: BaseDataStoreTests {
                                              version: 1)
 
         let saveMetadata1 = expectation(description: "save metadata1 success")
-        wait(for: [saveMetadata1], timeout: 1)
         let result = await storageAdapter.save(metadata1)
         guard case .success = result else {
             XCTFail("Failed to save metadata")
             return
         }
         saveMetadata1.fulfill()
-        
+        wait(for: [saveMetadata1], timeout: 1)
+
         
         let saveMetadata2 = expectation(description: "save metadata2 success")
-        wait(for: [saveMetadata2], timeout: 1)
         let result2 = await storageAdapter.save(metadata2)
         guard case .success = result2 else {
             XCTFail("Failed to save metadata")
             return
         }
         saveMetadata2.fulfill()
-        
+        wait(for: [saveMetadata2], timeout: 1)
+
 
         let querySuccess = expectation(description: "query for metadata success")
         var modelIds = [metadata1.modelId]
@@ -769,13 +769,14 @@ extension SQLiteStorageEngineAdapterTests {
         
         // "Row"
         let rowSaved = expectation(description: "Row model saved")
-        wait(for: [transactionSaved, groupSaved, rowSaved], timeout: 1)
         let result3 = await storageAdapter.save(Row(group: group))
         guard case .success = result3 else {
             XCTFail("Failed to save Row")
             return
         }
         rowSaved.fulfill()
+        wait(for: [transactionSaved, groupSaved, rowSaved], timeout: 1)
+
     }
 
     func testQueryWithReservedWords() async {
