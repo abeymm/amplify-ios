@@ -36,11 +36,6 @@ class AuthenticationTokenAuthInterceptorTests: XCTestCase {
 private class TestAuthTokenProvider: AmplifyAuthTokenProvider {
     let authToken = "token"
     
-    // TODO: Remove this after datastore dependencies are removed.
-    func getLatestAuthToken() -> Result<AuthToken, Error> {
-        .success(authToken)
-    }
-    
     func getUserPoolAccessToken() async throws -> String {
         authToken
     }
