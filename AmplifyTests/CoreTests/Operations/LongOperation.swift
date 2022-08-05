@@ -66,6 +66,7 @@ public typealias LongOperationProgressListener = (Progress) -> Void
 public typealias LongOperationResultListener = (LongOperationResult) -> Void
 
 public class LongOperation: AmplifyInProcessReportingOperation<LongOperationRequest, Progress, LongOperationSuccess, LongOperationError> {
+    public typealias Task = AmplifyInProcessReportingOperationTaskAdapter<Request, InProcess, Success, Failure>
     var count = 0
     var currentProgress: Progress!
 
@@ -116,4 +117,4 @@ public class LongOperation: AmplifyInProcessReportingOperation<LongOperationRequ
     }
 }
 
-public typealias LongTask = AmplifyInProcessReportingOperationTaskAdapter<LongOperation.Request, LongOperation.InProcess, LongOperation.Success, LongOperation.Failure>
+public typealias LongTask = LongOperation.Task
