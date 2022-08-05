@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct StorageDownloadFileRequest: AmplifyOperationRequest {
+public struct StorageDownloadFileRequest: AmplifyOperationRequest, RequestIdentifier {
     /// The unique identifier for the object in storage
     public let key: String
 
@@ -17,10 +17,13 @@ public struct StorageDownloadFileRequest: AmplifyOperationRequest {
     /// Options to adjust the behavior of this request, including plugin options
     public let options: Options
 
+    public let requestID: String
+
     public init(key: String, local: URL, options: Options) {
         self.key = key
         self.local = local
         self.options = options
+        self.requestID = UUID().uuidString
     }
 }
 
