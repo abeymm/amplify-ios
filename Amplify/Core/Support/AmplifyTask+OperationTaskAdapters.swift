@@ -6,6 +6,9 @@
 //
 
 import Foundation
+#if canImport(Combine)
+import Combine
+#endif
 
 class AmplifyOperationTaskAdapter<Request: AmplifyOperationRequest, Success, Failure: AmplifyError>: AmplifyTask {
     let operation: AmplifyOperation<Request, Success, Failure>
@@ -42,6 +45,12 @@ class AmplifyOperationTaskAdapter<Request: AmplifyOperationRequest, Success, Fai
         await childTask.cancel()
     }
 
+#if canImport(Combine)
+    var resultPublisher: AnyPublisher<Success, Failure> {
+        operation.resultPublisher
+    }
+#endif
+
     private func resultListener(_ result: Result<Success, Failure>) {
         Task {
             await childTask.finish(result)
@@ -49,7 +58,11 @@ class AmplifyOperationTaskAdapter<Request: AmplifyOperationRequest, Success, Fai
     }
 }
 
-class AmplifyInProcessReportingOperationTaskAdapter<Request: AmplifyOperationRequest, InProcess, Success, Failure: AmplifyError>: AmplifyTask, AmplifyInProcessReportingTask {
+//extension AmplifyTask where Self == AmplifyOperationTaskAdapter {}
+
+public extension AmplifyInProcessReportingTask {}
+
+class AmplifyInProcessReportingOperationTaskAdapter<Request: AmplifyOperationRequest, InProcess, Success, Failure: AmplifyError>: AmplifyProgressTask {
     let operation: AmplifyInProcessReportingOperation<Request, InProcess, Success, Failure>
     let childTask: ChildTask<InProcess, Success, Failure>
     var resultToken: UnsubscribeToken? = nil
@@ -94,6 +107,16 @@ class AmplifyInProcessReportingOperationTaskAdapter<Request: AmplifyOperationReq
     func cancel() async {
         await childTask.cancel()
     }
+
+#if canImport(Combine)
+    var resultPublisher: AnyPublisher<Success, Failure> {
+        operation.resultPublisher
+    }
+
+    var progressPublisher: AnyPublisher<InProcess, Never> {
+        operation.progressPublisher
+    }
+#endif
 
     private func resultListener(_ result: Result<Success, Failure>) {
         Task {

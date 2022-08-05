@@ -48,16 +48,18 @@ open class AmplifyOperation<Request: AmplifyOperationRequest, Success, Failure: 
 
     private var resultListenerUnsubscribeToken: UnsubscribeToken?
 
-    /// Local storage for the result publisher associated with this operation. In iOS
-    /// 13 and higher, this is initialized to be a `Future<Success, Failure>`. We use a
+    /// Local storage for the result publisher associated with this operation. We use a
     /// Future here to ensure that a subscriber will always receive a value, even if
     /// the operation has already completed execution by the time the subscriber is
     /// attached. We derive the `resultPublisher` computed property from this value.
-    var resultFuture: Any
+    /// Amplify V2 can expect Combine to be available.
+#if canImport(Combine)
+    var resultFuture: Future<Success, Failure>!
 
     /// Local storage for the result promise associated with this operation. We use
     /// this promise handle to resolve the operation in the `dispatch` method
-    var resultPromise: Any
+    var resultPromise: Future<Success, Failure>.Promise!
+#endif
 
     /// Creates an AmplifyOperation for the specified reequest.
     ///
@@ -103,9 +105,6 @@ open class AmplifyOperation<Request: AmplifyOperationRequest, Success, Failure: 
         self.eventName = eventName
         self.request = request
         self.id = UUID()
-
-        self.resultFuture = false
-        self.resultPromise = false
 
         super.init()
 
