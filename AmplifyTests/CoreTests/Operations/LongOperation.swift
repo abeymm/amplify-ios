@@ -8,15 +8,17 @@
 import Foundation
 @testable import Amplify
 
-public class LongOperationRequest: AmplifyOperationRequest {
+public class LongOperationRequest: AmplifyOperationRequest, RequestIdentifier {
     public let options: [AnyHashable : Any]
     public let steps: Int
     public let delay: Double
+    public let requestID: String
 
     public init(options: [AnyHashable : Any] = [:], steps: Int, delay: Double) {
         self.options = options
         self.steps = steps
         self.delay = delay
+        self.requestID = UUID().uuidString
     }
 }
 

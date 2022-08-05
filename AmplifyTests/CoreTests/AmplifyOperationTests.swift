@@ -40,6 +40,7 @@ class AmplifyOperationTests: XCTestCase {
         var success = false
         var output: String? = nil
         var thrown: Error? = nil
+        var requestID: String? = nil
 
         let request = LongOperationRequest(steps: 10, delay: 0.1)
         let longTask = await runLongOperation(request: request)
@@ -62,6 +63,7 @@ class AmplifyOperationTests: XCTestCase {
             let result = try await longTask.result
             output = result.id
             success = true
+            requestID = await longTask.requestID
         } catch {
             thrown = error
         }
@@ -70,6 +72,8 @@ class AmplifyOperationTests: XCTestCase {
         XCTAssertNotNil(output)
         XCTAssertFalse(output.isEmpty)
         XCTAssertNil(thrown)
+        XCTAssertFalse(requestID.isEmpty)
+        XCTAssertEqual(request.requestID, requestID)
     }
 
     private func runFastOperation(request: FastOperationRequest) async throws -> FastTask.Success {

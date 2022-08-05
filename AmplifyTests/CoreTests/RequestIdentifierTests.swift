@@ -19,4 +19,9 @@ class RequestIdentiferTests: XCTestCase {
         XCTAssertFalse(request.requestID.isEmpty)
     }
 
+    func testLongOperationRequest() {
+        let request = LongOperationRequest(options: [:], steps: 10, delay: 0.25)
+        XCTAssertFalse(request.requestID.isEmpty)
+    }
+
 }
