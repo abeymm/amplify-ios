@@ -107,3 +107,19 @@ class AmplifyInProcessReportingOperationTaskAdapter<Request: AmplifyOperationReq
         }
     }
 }
+
+extension AmplifyOperationTaskAdapter where Request: RequestIdentifier {
+    var requestID: String {
+        get async {
+            operation.request.requestID
+        }
+    }
+}
+
+extension AmplifyInProcessReportingOperationTaskAdapter where Request: RequestIdentifier {
+    var requestID: String {
+        get async {
+            operation.request.requestID
+        }
+    }
+}
