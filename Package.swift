@@ -29,6 +29,7 @@ let swiftSettings: [SwiftSetting]? = [.define("DEV_PREVIEW_BUILD")]
 let amplifyTargets: [Target] = [
     .target(
         name: "Amplify",
+        dependencies: ["SwiftLintPlugin"],
         path: "Amplify",
         exclude: [
             "Info.plist",
@@ -99,6 +100,16 @@ let amplifyTargets: [Target] = [
         exclude: [
             "Info.plist"
         ]
+    ),
+    .binaryTarget(
+        name: "SwiftLintBinary",
+        url: "https://github.com/realm/SwiftLint/releases/download/0.48.0/SwiftLintBinary-macos.artifactbundle.zip",
+        checksum: "9c255e797260054296f9e4e4cd7e1339a15093d75f7c4227b9568d63edddba50"
+    ),
+    .plugin(
+        name: "SwiftLintPlugin",
+        capability: .buildTool(),
+        dependencies: ["SwiftLintBinary"]
     )
 ]
 
@@ -108,7 +119,9 @@ let apiTargets: [Target] = [
         dependencies: [
             .target(name: "Amplify"),
             .target(name: "AWSPluginsCore"),
-            .product(name: "AppSyncRealTimeClient", package: "AppSyncRealTimeClient")],
+            .product(name: "AppSyncRealTimeClient", package: "AppSyncRealTimeClient"),
+            .swiftlint
+        ],
         path: "AmplifyPlugins/API/Sources/AWSAPIPlugin",
         exclude: [
             "Info.plist",
@@ -152,7 +165,8 @@ let authTargets: [Target] = [
             .target(name: "AWSPluginsCore"),
             .product(name: "AWSClientRuntime", package: "AWSSwiftSDK"),
             .product(name: "AWSCognitoIdentityProvider", package: "AWSSwiftSDK"),
-            .product(name: "AWSCognitoIdentity", package: "AWSSwiftSDK")
+            .product(name: "AWSCognitoIdentity", package: "AWSSwiftSDK"),
+            .swiftlint
         ],
         path: "AmplifyPlugins/Auth/Sources/AWSCognitoAuthPlugin",
         swiftSettings: swiftSettings
@@ -191,7 +205,9 @@ let dataStoreTargets: [Target] = [
         dependencies: [
             .target(name: "Amplify"),
             .target(name: "AWSPluginsCore"),
-            .product(name: "SQLite", package: "SQLite.swift")],
+            .product(name: "SQLite", package: "SQLite.swift"),
+            .swiftlint
+        ],
         path: "AmplifyPlugins/DataStore/Sources/AWSDataStorePlugin",
         exclude: [
             "Info.plist",
@@ -218,7 +234,9 @@ let storageTargets: [Target] = [
         dependencies: [
             .target(name: "Amplify"),
             .target(name: "AWSPluginsCore"),
-            .product(name: "AWSS3", package: "AWSSwiftSDK")],
+            .product(name: "AWSS3", package: "AWSSwiftSDK"),
+            .swiftlint
+        ],
         path: "AmplifyPlugins/Storage/AWSS3StoragePlugin",
         exclude: [
             "Resources/Info.plist"
@@ -245,7 +263,9 @@ let geoTargets: [Target] = [
         dependencies: [
             .target(name: "Amplify"),
             .target(name: "AWSPluginsCore"),
-            .product(name: "AWSLocation", package: "AWSSwiftSDK")],
+            .product(name: "AWSLocation", package: "AWSSwiftSDK"),
+            .swiftlint
+        ],
         path: "AmplifyPlugins/Geo/AWSLocationGeoPlugin",
         exclude: [
             "Resources/Info.plist"
@@ -274,7 +294,9 @@ let analyticsTargets: [Target] = [
             .target(name: "AWSCognitoAuthPlugin"),
             .target(name: "AWSPluginsCore"),
             .product(name: "SQLite", package: "SQLite.swift"),
-            .product(name: "AWSPinpoint", package: "AWSSwiftSDK")],
+            .product(name: "AWSPinpoint", package: "AWSSwiftSDK"),
+            .swiftlint
+        ],
         path: "AmplifyPlugins/Analytics/AWSPinpointAnalyticsPlugin",
         exclude: [
             "Resources/Info.plist"
@@ -330,3 +352,7 @@ let package = Package(
     dependencies: dependencies,
     targets: targets
 )
+
+extension Target.Dependency {
+    static let swiftlint: Self = "SwiftLintPlugin"
+}
