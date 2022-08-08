@@ -28,7 +28,7 @@ extension VerifyPasswordSRP {
             let strippedPoolId =  strippedPoolId(poolId)
             let dateStr = generateDateString(date: stateData.clientTimestamp)
             let clientClass = type(of: srpClient)
-            let u = try clientClass.calculateUHexValue(
+            let u = try clientClass.calculateUHexValue( // swiftlint:disable:this identifier_name
                 clientPublicKeyHexValue: stateData.srpKeyPair.publicKeyHexValue,
                 serverPublicKeyHexValue: serverPublicBHexString)
             // HKDF

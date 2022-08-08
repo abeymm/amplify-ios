@@ -15,6 +15,7 @@ extension AuthorizationState {
 
         init() { }
 
+        // swiftlint:disable:next cyclomatic_complexity
         func resolve(
             oldState: StateType,
             byApplying event: StateMachineEvent

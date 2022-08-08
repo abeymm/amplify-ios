@@ -10,6 +10,7 @@ import AWSPluginsCore
 import ClientRuntime
 import AWSCognitoIdentityProvider
 
+// swiftlint:disable:next line_length
 public class AWSAuthResendSignUpCodeOperation: AmplifyOperation< AuthResendSignUpCodeRequest, AuthCodeDeliveryDetails, AuthError>, AuthResendSignUpCodeOperation {
 
     typealias CognitoUserPoolFactory = () throws -> CognitoUserPoolBehavior

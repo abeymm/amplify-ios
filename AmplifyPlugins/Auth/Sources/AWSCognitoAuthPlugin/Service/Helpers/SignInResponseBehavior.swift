@@ -16,7 +16,9 @@ protocol SignInResponseBehavior {
     var challengeName: CognitoIdentityProviderClientTypes.ChallengeNameType? { get }
     /// The challenge parameters.
     var challengeParameters: [Swift.String: Swift.String]? { get }
-    /// The session which should be passed both ways in challenge-response calls to the service. If the caller needs to go through another challenge, they return a session with other challenge parameters. This session should be passed as it is to the next RespondToAuthChallenge API call.
+    /// The session which should be passed both ways in challenge-response calls to the service.
+    /// If the caller needs to go through another challenge, they return a session with other challenge
+    ///  parameters. This session should be passed as it is to the next RespondToAuthChallenge API call.
     var session: Swift.String? { get }
 }
 

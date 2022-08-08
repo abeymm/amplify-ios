@@ -42,7 +42,9 @@ protocol CognitoUserPoolBehavior {
 
     /// Verifies the specified user attributes in the user pool.
     /// Throws VerifyUserAttributeOutputError
-    func verifyUserAttribute(input: AWSCognitoIdentityProvider.VerifyUserAttributeInput) async throws -> AWSCognitoIdentityProvider.VerifyUserAttributeOutputResponse
+    func verifyUserAttribute(
+        input: AWSCognitoIdentityProvider.VerifyUserAttributeInput
+    ) async throws -> AWSCognitoIdentityProvider.VerifyUserAttributeOutputResponse
 
     /// Changes the password for a specified user in a user pool.
     /// Throws ChangePasswordOutputError

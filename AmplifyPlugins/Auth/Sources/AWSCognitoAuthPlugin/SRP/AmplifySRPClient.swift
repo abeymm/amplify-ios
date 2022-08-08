@@ -15,8 +15,8 @@ struct AmplifySRPClient: SRPClientBehavior {
     let client: SRPClientState
 
     init(NHexValue: String, gHexValue: String) throws {
-        guard let N = BigInt(NHexValue, radix: 16),
-              let g = BigInt(gHexValue, radix: 16)
+        guard let N = BigInt(NHexValue, radix: 16), // swiftlint:disable:this identifier_name
+              let g = BigInt(gHexValue, radix: 16) // swiftlint:disable:this identifier_name
         else {
                   throw SRPError.numberConversion
               }
@@ -78,6 +78,7 @@ struct AmplifySRPClient: SRPClientBehavior {
         let signedClientPublicKey = AmplifyBigIntHelper.getSignedData(num: clientPublicNum)
         let signedServerPublicKey = AmplifyBigIntHelper.getSignedData(num: serverPublicNum)
 
+        // swiftlint:disable:next identifier_name
         let u = SRPClientState.calculcateU(publicClientKey: signedClientPublicKey,
                                            publicServerKey: signedServerPublicKey)
 

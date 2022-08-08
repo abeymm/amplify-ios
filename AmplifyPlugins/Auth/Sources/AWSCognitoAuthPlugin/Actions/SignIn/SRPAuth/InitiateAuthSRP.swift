@@ -55,7 +55,7 @@ struct InitiateAuthSRP: Action {
 
                 let asfDeviceId = try await CognitoUserPoolASF.asfDeviceID(
                     for: username,
-                    environment: environment as! AuthEnvironment)
+                    environment: environment as! AuthEnvironment) // swiftlint:disable:this force_cast
                 let request = InitiateAuthInput.srpInput(
                     username: username,
                     publicSRPAHexValue: srpKeyPair.publicKeyHexValue,

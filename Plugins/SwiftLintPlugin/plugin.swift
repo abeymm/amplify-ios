@@ -13,7 +13,8 @@ struct SwiftLintPlugin: BuildToolPlugin {
         context: PluginContext,
         target: Target
     ) async throws -> [Command] {
-        [
+        dump(target)
+        return [
             .buildCommand(
                 displayName: "Linting \(target.name)",
                 executable: try context.tool(named: "swiftlint").path,
@@ -21,7 +22,9 @@ struct SwiftLintPlugin: BuildToolPlugin {
                     "lint",
                     "--in-process-sourcekit",
                     "--path",
-                    target.directory.string
+                    target.directory.string,
+                    "--config",
+                    "\(context.package.directory.string)/Plugins/SwiftLintPlugin/.swiftlint.yml",
                 ],
                 environment: [:]
             )
