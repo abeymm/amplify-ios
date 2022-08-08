@@ -25,8 +25,7 @@ enum IncomingModelSyncedEmitterEvent {
 ///     - Check if it `ModelSyncedEvent` should be emitted, if so, emit it.
 ///     - Then send the mutation event which was used in the check above.
 final class ModelSyncedEventEmitter {
-    private let queue = DispatchQueue(label: "com.amazonaws.ModelSyncedEventEmitterQueue",
-                                      target: DispatchQueue.global())
+    private let queue = DispatchQueue(label: "com.amazonaws.ModelSyncedEventEmitterQueue")
 
     private var syncOrchestratorSink: AnyCancellable?
     private var reconciliationQueueSink: AnyCancellable?
