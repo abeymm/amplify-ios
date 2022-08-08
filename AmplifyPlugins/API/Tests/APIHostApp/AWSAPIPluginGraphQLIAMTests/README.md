@@ -76,7 +76,7 @@ Do you want to use the default authentication and security configuration?
     No
  
  What attributes are required for signing up? 
-   (Press Space to deselect Email, if selected, then press Enter with none selected)
+    Email
  Specify the app's refresh token expiration period (in days): 
     30
  Do you want to specify the user attributes this app can read and write? 
@@ -112,7 +112,7 @@ Continue in the terminal;
 Successfully added resource amplifyintegtest locally
 ```
 
-4. If you are using the latest CLI, update cli.json to include `"useExperimentalPipelinedTransformer": false` and `"transformerversion": 1`to ensure that it will use the v1 transformer and then `amplify push`
+4. `amplify push`
 
 ```perl
 ? Do you want to generate code for your newly created GraphQL API (Y/n) `n`
