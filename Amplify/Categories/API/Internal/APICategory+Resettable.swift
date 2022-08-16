@@ -7,7 +7,7 @@
 
 import Foundation
 
-extension AmplifyAPICategory: Resettable {
+extension APICategory: Resettable {
 
     public func reset() async {
         await withTaskGroup(of: Void.self) { taskGroup in
@@ -18,8 +18,8 @@ extension AmplifyAPICategory: Resettable {
                     self?.log.verbose("Resetting \(String(describing: self?.categoryType)) plugin: finished")
                 }
             }
+            await taskGroup.waitForAll()
         }
-
         log.verbose("Resetting ModelRegistry and ModelListDecoderRegistry")
         ModelRegistry.reset()
         ModelListDecoderRegistry.reset()

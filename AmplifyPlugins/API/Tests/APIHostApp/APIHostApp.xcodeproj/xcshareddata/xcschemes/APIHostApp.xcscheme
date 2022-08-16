@@ -28,36 +28,6 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       shouldUseLaunchSchemeArgsEnv = "YES">
       <Testables>
-         <TestableReference
-            skipped = "NO">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "21698A7A28899804004BD994"
-               BuildableName = "AWSAPIPluginFunctionalTests.xctest"
-               BlueprintName = "AWSAPIPluginFunctionalTests"
-               ReferencedContainer = "container:APIHostApp.xcodeproj">
-            </BuildableReference>
-         </TestableReference>
-         <TestableReference
-            skipped = "NO">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "21698A872889980F004BD994"
-               BuildableName = "AWSAPIPluginGraphQLAPIKeyIntegrationTests.xctest"
-               BlueprintName = "AWSAPIPluginGraphQLAPIKeyIntegrationTests"
-               ReferencedContainer = "container:APIHostApp.xcodeproj">
-            </BuildableReference>
-         </TestableReference>
-         <TestableReference
-            skipped = "NO">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "21698A9428899818004BD994"
-               BuildableName = "AWSAPIPluginIntegrationTests.xctest"
-               BlueprintName = "AWSAPIPluginIntegrationTests"
-               ReferencedContainer = "container:APIHostApp.xcodeproj">
-            </BuildableReference>
-         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction
@@ -87,8 +57,7 @@
       savedToolIdentifier = ""
       useCustomWorkingDirectory = "NO"
       debugDocumentVersioning = "YES">
-      <BuildableProductRunnable
-         runnableDebuggingMode = "0">
+      <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "21E73E6A28898D7800D7DB7E"
@@ -96,7 +65,7 @@
             BlueprintName = "APIHostApp"
             ReferencedContainer = "container:APIHostApp.xcodeproj">
          </BuildableReference>
-      </BuildableProductRunnable>
+      </MacroExpansion>
    </ProfileAction>
    <AnalyzeAction
       buildConfiguration = "Debug">

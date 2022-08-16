@@ -18,7 +18,7 @@ class RefreshUserPoolTokensTests: XCTestCase {
 
         let expectation = expectation(description: "noUserPoolEnvironment")
 
-        let action = RefreshUserPoolTokens(existingTokens: .testData)
+        let action = RefreshUserPoolTokens(existingSignedIndata: .testData)
 
         action.execute(withDispatcher: MockDispatcher { event in
 
@@ -48,24 +48,19 @@ class RefreshUserPoolTokensTests: XCTestCase {
             )
         }
 
-        let environment = BasicUserPoolEnvironment(
-            userPoolConfiguration: UserPoolConfigurationData.testData,
-            cognitoUserPoolFactory: identityProviderFactory,
-            cognitoUserPoolASFFactory: Defaults.makeDefaultASF)
-
-        let action = RefreshUserPoolTokens(existingTokens: .testData)
+        let action = RefreshUserPoolTokens(existingSignedIndata: .testData)
 
         action.execute(withDispatcher: MockDispatcher { event in
 
-                guard let event = event as? RefreshSessionEvent else { return}
+            guard let event = event as? RefreshSessionEvent else { return }
 
-                if case let .throwError(error) = event.eventType {
-                    XCTAssertNotNil(error)
-                    XCTAssertEqual(error, .invalidTokens)
-                    expectation.fulfill()
-                }
-            },
-            environment: environment
+            if case let .throwError(error) = event.eventType {
+                XCTAssertNotNil(error)
+                XCTAssertEqual(error, .invalidTokens)
+                expectation.fulfill()
+            }
+        }, environment: Defaults.makeDefaultAuthEnvironment(
+            userPoolFactory: identityProviderFactory)
         )
 
         waitForExpectations(timeout: 1)
@@ -87,21 +82,16 @@ class RefreshUserPoolTokensTests: XCTestCase {
             )
         }
 
-        let environment = BasicUserPoolEnvironment(
-            userPoolConfiguration: UserPoolConfigurationData.testData,
-            cognitoUserPoolFactory: identityProviderFactory,
-            cognitoUserPoolASFFactory: Defaults.makeDefaultASF)
-
-        let action = RefreshUserPoolTokens(existingTokens: .testData)
+        let action = RefreshUserPoolTokens(existingSignedIndata: .testData)
 
         action.execute(withDispatcher: MockDispatcher { event in
 
-                if let userPoolEvent = event as? RefreshSessionEvent,
-                   case .refreshedCognitoUserPool = userPoolEvent.eventType {
-                    expectation.fulfill()
-                }
-            },
-            environment: environment
+            if let userPoolEvent = event as? RefreshSessionEvent,
+               case .refreshIdentityInfo = userPoolEvent.eventType {
+                expectation.fulfill()
+            }
+        }, environment: Defaults.makeDefaultAuthEnvironment(
+            userPoolFactory: identityProviderFactory)
         )
         waitForExpectations(timeout: 0.1)
     }
@@ -125,19 +115,18 @@ class RefreshUserPoolTokensTests: XCTestCase {
             cognitoUserPoolFactory: identityProviderFactory,
             cognitoUserPoolASFFactory: Defaults.makeDefaultASF)
 
-        let action = RefreshUserPoolTokens(existingTokens: .testData)
+        let action = RefreshUserPoolTokens(existingSignedIndata: .testData)
 
         action.execute(withDispatcher: MockDispatcher { event in
 
-                if let userPoolEvent = event as? RefreshSessionEvent,
-                   case let .throwError(error) = userPoolEvent.eventType {
-                    XCTAssertNotNil(error)
-                    XCTAssertEqual(error, .service(testError))
-                    expectation.fulfill()
-                }
-            },
-            environment: environment
-        )
+            if let userPoolEvent = event as? RefreshSessionEvent,
+               case let .throwError(error) = userPoolEvent.eventType {
+                XCTAssertNotNil(error)
+                XCTAssertEqual(error, .service(testError))
+                expectation.fulfill()
+            }
+        }, environment: environment)
+        
         waitForExpectations(timeout: 0.1)
     }
 

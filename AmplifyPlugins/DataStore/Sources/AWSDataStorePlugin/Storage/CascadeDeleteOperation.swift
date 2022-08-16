@@ -458,27 +458,10 @@ public class CascadeDeleteOperation<M: Model>: AsynchronousOperation {
         }
     }
 
-    @available(iOS 13.0, *)
     private func submitToSyncEngine(mutationEvent: MutationEvent,
                                     syncEngine: RemoteSyncEngineBehavior,
                                     completion: @escaping DataStoreCallback<MutationEvent>) {
-        var mutationQueueSink: AnyCancellable?
-        mutationQueueSink = syncEngine
-            .submit(mutationEvent)
-            .sink(
-                receiveCompletion: { futureCompletion in
-                    switch futureCompletion {
-                    case .failure(let error):
-                        completion(.failure(causedBy: error))
-                    case .finished:
-                        self.log.verbose("\(#function) Received successful completion")
-                    }
-                    mutationQueueSink?.cancel()
-                    mutationQueueSink = nil
-                }, receiveValue: { mutationEvent in
-                    self.log.verbose("\(#function) saved mutation event: \(mutationEvent)")
-                    completion(.success(mutationEvent))
-                })
+        syncEngine.submit(mutationEvent, completion: completion)
     }
 }
 

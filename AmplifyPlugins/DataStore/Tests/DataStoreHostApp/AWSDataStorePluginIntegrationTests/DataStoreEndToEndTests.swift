@@ -12,6 +12,7 @@ import Combine
 
 @testable import Amplify
 @testable import AWSDataStorePlugin
+@testable import DataStoreHostApp
 
 class DataStoreEndToEndTests: SyncEngineIntegrationTestBase {
 
@@ -43,12 +44,12 @@ class DataStoreEndToEndTests: SyncEngineIntegrationTestBase {
             content: "Original content from DataStoreEndToEndTests at \(date)",
             createdAt: date)
 
-        let saveSuccess = expectation(description: "save was successful.")
         let outboxMutationEnqueued = expectation(description: "received OutboxMutationEnqueuedEvent")
         outboxMutationEnqueued.assertForOverFulfill = false
         let outboxIsNotEmptyReceived = expectation(description: "received outboxStatusReceived(false)")
         outboxIsNotEmptyReceived.assertForOverFulfill = false
         let outboxIsEmptyReceived = expectation(description: "received outboxStatusReceived(true)")
+        outboxIsEmptyReceived.assertForOverFulfill = false
         let outboxMutationProcessed = expectation(description: "received outboxMutationProcessed")
         outboxMutationProcessed.assertForOverFulfill = false
         let syncReceived = expectation(description: "SyncReceived(MutationEvent(version: 1))")
@@ -98,16 +99,8 @@ class DataStoreEndToEndTests: SyncEngineIntegrationTestBase {
             }
         }.store(in: &cancellables)
 
-        Amplify.DataStore.save(newPost) { result in
-            switch result {
-            case .success(let post):
-                XCTAssertEqual(post.content, newPost.content)
-                saveSuccess.fulfill()
-            case .failure(let error):
-                XCTFail("Failed to save post \(error)")
-            }
-        }
-
+        let savedPost = try await Amplify.DataStore.save(newPost)
+        XCTAssertEqual(savedPost.content, newPost.content)
         await waitForExpectations(timeout: 10.0)
     }
 
@@ -153,7 +146,7 @@ class DataStoreEndToEndTests: SyncEngineIntegrationTestBase {
             return
         }
 
-        Amplify.DataStore.save(newPost) { _ in }
+        _ = try await Amplify.DataStore.save(newPost)
         await waitForExpectations(timeout: networkTimeout)
 
         let updateReceived = expectation(description: "Update notification received")
@@ -183,7 +176,7 @@ class DataStoreEndToEndTests: SyncEngineIntegrationTestBase {
             XCTFail("Listener not registered for hub")
             return
         }
-        Amplify.DataStore.save(updatedPost) { _ in }
+        _ = try await Amplify.DataStore.save(updatedPost)
         await waitForExpectations(timeout: networkTimeout)
         
         let deleteReceived = expectation(description: "Delete notification received")
@@ -213,7 +206,7 @@ class DataStoreEndToEndTests: SyncEngineIntegrationTestBase {
             XCTFail("Listener not registered for hub")
             return
         }
-        Amplify.DataStore.delete(updatedPost) { _ in }
+        try await Amplify.DataStore.delete(updatedPost)
         await waitForExpectations(timeout: networkTimeout)
     }
 
@@ -262,7 +255,7 @@ class DataStoreEndToEndTests: SyncEngineIntegrationTestBase {
             XCTFail("Listener not registered for hub")
             return
         }
-        Amplify.DataStore.save(newPost) { _ in }
+        _ = try await Amplify.DataStore.save(newPost)
         await waitForExpectations(timeout: networkTimeout)
         
         let updateReceived = expectation(description: "Update notification received")
@@ -292,7 +285,7 @@ class DataStoreEndToEndTests: SyncEngineIntegrationTestBase {
             XCTFail("Listener not registered for hub")
             return
         }
-        Amplify.DataStore.save(updatedPost, where: post.title == title) { _ in }
+        _ = try await Amplify.DataStore.save(updatedPost, where: post.title == title)
         await waitForExpectations(timeout: networkTimeout)
     }
 
@@ -349,7 +342,7 @@ class DataStoreEndToEndTests: SyncEngineIntegrationTestBase {
             return
         }
 
-        Amplify.DataStore.save(newPost) { _ in }
+        _ = try await Amplify.DataStore.save(newPost)
         await waitForExpectations(timeout: networkTimeout)
         
         let updateLocalSuccess = expectation(description: "Update local successful")
@@ -391,7 +384,7 @@ class DataStoreEndToEndTests: SyncEngineIntegrationTestBase {
             return
         }
         
-        Amplify.DataStore.save(updatedPost, where: post.content == updatedPost.content) { _ in }
+        _ = try await Amplify.DataStore.save(updatedPost, where: post.content == updatedPost.content)
 
         await waitForExpectations(timeout: networkTimeout)
     }
@@ -408,25 +401,9 @@ class DataStoreEndToEndTests: SyncEngineIntegrationTestBase {
     func testStopStart() async throws {
         await setUp(withModels: TestModelRegistration())
         try await startAmplifyAndWaitForSync()
-        let stopStartSuccess = expectation(description: "stop then start successful")
-        Amplify.DataStore.stop { result in
-            switch result {
-            case .success:
-                Amplify.DataStore.start { result in
-                    switch result {
-                    case .success:
-                        stopStartSuccess.fulfill()
-                    case .failure(let error):
-                        XCTFail("\(error)")
-                    }
-                }
-            case .failure(let error):
-                XCTFail("\(error)")
-            }
-        }
-        await waitForExpectations(timeout: networkTimeout)
+        try await Amplify.DataStore.stop()
+        try await Amplify.DataStore.start()
         try await validateSavePost()
-
     }
 
     /// Ensure the DataStore is automatically started when querying for the first time
@@ -448,8 +425,7 @@ class DataStoreEndToEndTests: SyncEngineIntegrationTestBase {
         try startAmplify()
 
         // We expect the query to complete, but not to return a value. Thus, we'll ignore the error
-        let queryCompleted = expectation(description: "queryCompleted")
-        Amplify.DataStore.query(Post.self, byId: "123") { _ in queryCompleted.fulfill() }
+        _ = try await Amplify.DataStore.query(Post.self, byId: "123")
 
         await waitForExpectations(timeout: networkTimeout)
         sink.cancel()
@@ -467,23 +443,9 @@ class DataStoreEndToEndTests: SyncEngineIntegrationTestBase {
     func testClearStart() async throws {
         await setUp(withModels: TestModelRegistration())
         try await startAmplifyAndWaitForSync()
-        let clearStartSuccess = expectation(description: "clear then start successful")
-        Amplify.DataStore.clear { result in
-            switch result {
-            case .success:
-                Amplify.DataStore.start { result in
-                    switch result {
-                    case .success:
-                        clearStartSuccess.fulfill()
-                    case .failure(let error):
-                        XCTFail("\(error)")
-                    }
-                }
-            case .failure(let error):
-                XCTFail("\(error)")
-            }
-        }
-        await waitForExpectations(timeout: networkTimeout)
+        try await Amplify.DataStore.clear()
+        try await Amplify.DataStore.start()
+        try await validateSavePost()
         try await validateSavePost()
     }
 
@@ -539,7 +501,9 @@ class DataStoreEndToEndTests: SyncEngineIntegrationTestBase {
         let capturedPosts = posts
 
         DispatchQueue.concurrentPerform(iterations: count) { index in
-            _ = Amplify.DataStore.save(capturedPosts[index])
+            Task {
+                _ = try await Amplify.DataStore.save(capturedPosts[index])
+            }
         }
 
         await waitForExpectations(timeout: 100)
@@ -577,7 +541,9 @@ class DataStoreEndToEndTests: SyncEngineIntegrationTestBase {
             }
         }
         DispatchQueue.concurrentPerform(iterations: count) { index in
-            _ = Amplify.DataStore.delete(capturedPosts[index])
+            Task {
+                try await Amplify.DataStore.delete(capturedPosts[index])
+            }
         }
         await waitForExpectations(timeout: 100)
         sink.cancel()
@@ -620,7 +586,7 @@ class DataStoreEndToEndTests: SyncEngineIntegrationTestBase {
             return
         }
 
-        Amplify.DataStore.save(newPost) { _ in }
+        _ = try await Amplify.DataStore.save(newPost)
         
         await waitForExpectations(timeout: networkTimeout)
     }

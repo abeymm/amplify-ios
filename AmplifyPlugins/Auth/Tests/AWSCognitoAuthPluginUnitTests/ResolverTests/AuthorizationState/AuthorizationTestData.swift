@@ -24,7 +24,7 @@ extension AuthAWSCognitoCredentials {
         AuthAWSCognitoCredentials(accessKey: "accessKey",
                                   secretKey: "secretKey",
                                   sessionKey: "sessionKey",
-                                  expiration: Date())
+                                  expiration: Date() + 121)
     }
 
     static var expiredTestData: AuthAWSCognitoCredentials {
@@ -37,19 +37,19 @@ extension AuthAWSCognitoCredentials {
 
 extension AmplifyCredentials {
     static var testData: AmplifyCredentials {
-        AmplifyCredentials.userPoolAndIdentityPool(tokens: AWSCognitoUserPoolTokens.testData,
+        AmplifyCredentials.userPoolAndIdentityPool(signedInData: .testData,
                                                    identityID: "identityId",
                                                    credentials: AuthAWSCognitoCredentials.testData)
     }
 
     static var testDataWithExpiredTokens: AmplifyCredentials {
-        AmplifyCredentials.userPoolAndIdentityPool(tokens: AWSCognitoUserPoolTokens.expiredTestData,
+        AmplifyCredentials.userPoolAndIdentityPool(signedInData: .expiredTestData,
                                                    identityID: "identityId",
                                                    credentials: AuthAWSCognitoCredentials.testData)
     }
 
     static var testDataWithExpiredAWSCredentials: AmplifyCredentials {
-        AmplifyCredentials.userPoolAndIdentityPool(tokens: AWSCognitoUserPoolTokens.testData,
+        AmplifyCredentials.userPoolAndIdentityPool(signedInData: .testData,
                                                    identityID: "identityId",
                                                    credentials: AuthAWSCognitoCredentials.expiredTestData)
     }

@@ -17,6 +17,7 @@ class FetchAuthSessionOperationHelper {
     var authStateMachineToken: AuthStateMachine.StateChangeListenerToken?
 
     func fetch(_ authStateMachine: AuthStateMachine,
+               forceRefresh: Bool = false,
                completion: @escaping FetchAuthSessionCompletion) {
         authStateMachine.getCurrentState { state in
             guard case .configured(_, let authorizationState) = state  else {
@@ -37,9 +38,10 @@ class FetchAuthSessionOperationHelper {
 
                 switch credentials {
 
-                case .userPoolOnly(tokens: let tokens):
-                    if tokens.doesExpire(in: Self.expiryBufferInSeconds) {
-                        let event = AuthorizationEvent(eventType: .refreshSession)
+                case .userPoolOnly(signedInData: let data):
+                    if data.cognitoUserPoolTokens.doesExpire(in: Self.expiryBufferInSeconds) ||
+                        forceRefresh {
+                        let event = AuthorizationEvent(eventType: .refreshSession(forceRefresh))
                         authStateMachine.send(event)
                         self.listenForSession(authStateMachine: authStateMachine, completion: completion)
                     } else {
@@ -47,27 +49,29 @@ class FetchAuthSessionOperationHelper {
                     }
 
                 case .identityPoolOnly(identityID: _, credentials: let awsCredentials):
-                    if awsCredentials.doesExpire(in: Self.expiryBufferInSeconds) {
-                        let event = AuthorizationEvent(eventType: .refreshSession)
+                    if awsCredentials.doesExpire(in: Self.expiryBufferInSeconds) ||
+                        forceRefresh {
+                        let event = AuthorizationEvent(eventType: .refreshSession(forceRefresh))
                         authStateMachine.send(event)
                         self.listenForSession(authStateMachine: authStateMachine, completion: completion)
                     } else {
                         completion(.success(credentials.cognitoSession))
                     }
 
-                case .userPoolAndIdentityPool(tokens: let tokens,
+                case .userPoolAndIdentityPool(signedInData: let data,
                                               identityID: _,
                                               credentials: let awsCredentials):
-                    if  tokens.doesExpire(in: Self.expiryBufferInSeconds) ||
-                            awsCredentials.doesExpire(in: Self.expiryBufferInSeconds) {
-                        let event = AuthorizationEvent(eventType: .refreshSession)
+                    if  data.cognitoUserPoolTokens.doesExpire(in: Self.expiryBufferInSeconds) ||
+                            awsCredentials.doesExpire(in: Self.expiryBufferInSeconds) ||
+                            forceRefresh {
+                        let event = AuthorizationEvent(eventType: .refreshSession(forceRefresh))
                         authStateMachine.send(event)
                         self.listenForSession(authStateMachine: authStateMachine, completion: completion)
                     } else {
                         completion(.success(credentials.cognitoSession))
                     }
                 default:
-                    let event = AuthorizationEvent(eventType: .refreshSession)
+                    let event = AuthorizationEvent(eventType: .refreshSession(forceRefresh))
                     authStateMachine.send(event)
                     self.listenForSession(authStateMachine: authStateMachine, completion: completion)
                 }
@@ -80,7 +84,7 @@ class FetchAuthSessionOperationHelper {
                     let session = AuthCognitoSignedInSessionHelper.makeExpiredSignedInSession()
                     completion(.success(session))
                 } else if case .sessionError = error {
-                    let event = AuthorizationEvent(eventType: .refreshSession)
+                    let event = AuthorizationEvent(eventType: .refreshSession(forceRefresh))
                     authStateMachine.send(event)
                     self.listenForSession(authStateMachine: authStateMachine, completion: completion)
                 } else {

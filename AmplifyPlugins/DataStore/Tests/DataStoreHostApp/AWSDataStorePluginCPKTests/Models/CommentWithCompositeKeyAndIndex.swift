@@ -1,10 +1,3 @@
-//
-// Copyright Amazon.com Inc. or its affiliates.
-// All Rights Reserved.
-//
-// SPDX-License-Identifier: Apache-2.0
-//
-
 // swiftlint:disable all
 import Amplify
 import Foundation
@@ -15,7 +8,7 @@ public struct CommentWithCompositeKeyAndIndex: Model {
   public var post: PostWithCompositeKeyAndIndex?
   public var createdAt: Temporal.DateTime?
   public var updatedAt: Temporal.DateTime?
-
+  
   public init(id: String = UUID().uuidString,
       content: String,
       post: PostWithCompositeKeyAndIndex? = nil) {
