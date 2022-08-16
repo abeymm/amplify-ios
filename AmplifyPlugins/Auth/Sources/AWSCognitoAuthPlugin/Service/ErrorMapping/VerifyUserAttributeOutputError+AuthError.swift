@@ -91,6 +91,13 @@ extension VerifyUserAttributeOutputError: AuthErrorConvertible {
                 AuthPluginErrorConstants.userNotConfirmedError,
                 AWSCognitoAuthError.userNotConfirmed
             )
+            
+        case .aliasExistsException(let exception):
+            return AuthError.service(
+                exception.message ?? "Username is already taken",
+                AuthPluginErrorConstants.userNotConfirmedError,
+                AWSCognitoAuthError.userNotConfirmed
+            )
         }
     }
 }
