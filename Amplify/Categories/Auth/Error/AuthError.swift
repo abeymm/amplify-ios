@@ -33,8 +33,7 @@ public enum AuthError {
 
     /// Caused when a session is expired and needs the user to be re-authenticated
     case sessionExpired(ErrorDescription, RecoverySuggestion, Error? = nil)
-        
-    case userNotConfirmedException(ErrorDescription, RecoverySuggestion, Error? = nil)
+    
 }
 
 extension AuthError: AmplifyError {
@@ -48,8 +47,7 @@ extension AuthError: AmplifyError {
              .notAuthorized(_, _, let underlyingError),
              .sessionExpired(_, _, let underlyingError),
              .signedOut(_, _, let underlyingError),
-             .invalidState(_, _, let underlyingError),
-             .userNotConfirmedException(_, _, let underlyingError):
+             .invalidState(_, _, let underlyingError):
             return underlyingError
         }
     }
@@ -62,8 +60,7 @@ extension AuthError: AmplifyError {
              .notAuthorized(let errorDescription, _, _),
              .signedOut(let errorDescription, _, _),
              .sessionExpired(let errorDescription, _, _),
-             .invalidState(let errorDescription, _, _),
-             .userNotConfirmedException(let errorDescription, _, _):
+             .invalidState(let errorDescription, _, _):
             return errorDescription
         case .unknown(let errorDescription, _):
             return "Unexpected error occurred with message: \(errorDescription)"
@@ -78,8 +75,7 @@ extension AuthError: AmplifyError {
              .notAuthorized(_, let recoverySuggestion, _),
              .signedOut(_, let recoverySuggestion, _),
              .sessionExpired(_, let recoverySuggestion, _),
-             .invalidState(_, let recoverySuggestion, _),
-             .userNotConfirmedException(_, let recoverySuggestion, _):
+             .invalidState(_, let recoverySuggestion, _):
             return recoverySuggestion
         case .unknown:
             return AmplifyErrorMessages.shouldNotHappenReportBugToAWS()
